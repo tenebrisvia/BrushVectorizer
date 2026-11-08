@@ -1,0 +1,2660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brush Vectorizer Studio</title>
+  <style>
+    :root {
+      --bg-app: #0f1117;
+      --bg-panel: #171a22;
+      --bg-panel-alt: #1f2430;
+      --bg-canvas: #0b0c10;
+      --border: #2a3040;
+      --text: #e5e9f0;
+      --text-muted: #94a3b8;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: var(--bg-app);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* Top Header Toolbar */
+    header {
+      height: 54px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+    }
+    .brand-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #60a5fa, #a855f7);
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    select, button, .btn-link {
+      background: var(--bg-panel-alt);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 6px 11px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    select:hover, button:hover, .btn-link:hover {
+      border-color: #475569;
+      background: #272d3d;
+    }
+    button.primary, .btn-link.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    button.primary:hover, .btn-link.primary:hover {
+      background: var(--accent-hover);
+    }
+    button.active-tab {
+      background: #2563eb33;
+      border-color: var(--accent);
+      color: #93c5fd;
+    }
+
+    .segmented {
+      display: inline-flex;
+      background: var(--bg-app);
+      padding: 2px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+    }
+    .segmented button {
+      border: none;
+      background: transparent;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .segmented button.active {
+      background: var(--bg-panel-alt);
+      color: var(--text);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+
+    /* Main Workspace Layout */
+    .workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 320px 1fr 290px;
+      min-height: 0;
+    }
+
+    /* Left & Right Sidebars */
+    .sidebar {
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar.right {
+      border-right: none;
+      border-left: 1px solid var(--border);
+    }
+
+    .panel-section {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .preset-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .preset-grid button {
+      justify-content: center;
+      font-size: 11.5px;
+      padding: 5px 8px;
+    }
+
+    .control-row {
+      margin-bottom: 10px;
+      padding: 4px 6px;
+      margin-left: -6px;
+      margin-right: -6px;
+      border-radius: 5px;
+      transition: background 0.12s ease;
+    }
+    .control-row:hover, .checkbox-group:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .control-row:last-child { margin-bottom: 0; }
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    .control-val {
+      color: #93c5fd;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+    .checkbox-group {
+      margin-bottom: 8px;
+      padding: 4px 6px;
+      margin-left: -6px;
+      margin-right: -6px;
+      border-radius: 5px;
+      transition: background 0.12s ease;
+    }
+    .checkbox-group:last-child { margin-bottom: 0; }
+    .checkbox-group .checkbox-row {
+      margin-bottom: 0;
+    }
+
+    /* Floating Hover Tooltip for Left Sidebar Controls */
+    .sidebar-tooltip {
+      position: fixed;
+      left: 328px;
+      top: 0;
+      max-width: 260px;
+      background: rgba(15, 17, 23, 0.96);
+      color: var(--text);
+      border: 1px solid #3b82f666;
+      border-radius: 7px;
+      padding: 7px 10px;
+      font-size: 11.5px;
+      line-height: 1.4;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+      pointer-events: none;
+      z-index: 200;
+      opacity: 0;
+      transform: translateX(-4px);
+      transition: opacity 0.12s ease, transform 0.12s ease;
+    }
+    .sidebar-tooltip.visible {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+      height: 5px;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    /* Center Interactive Viewport */
+    .viewport-container {
+      position: relative;
+      background:
+        radial-gradient(circle at center, #161923 0%, #0b0c10 100%);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+    }
+    .viewport-container:active { cursor: grabbing; }
+
+    .canvas-stage {
+      transform-origin: 0 0;
+      will-change: transform;
+      position: absolute;
+      top: 0;
+      left: 0;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.65);
+      background: #fff;
+      line-height: 0;
+    }
+
+    .canvas-stage svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Floating Viewport HUD */
+    .viewport-hud {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(23, 26, 34, 0.9);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      padding: 5px 10px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 30;
+    }
+    .zoom-readout {
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      min-width: 48px;
+      text-align: center;
+      color: var(--text-muted);
+    }
+
+    .status-pill {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(23, 26, 34, 0.92);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 30;
+    }
+    .spinner {
+      width: 12px;
+      height: 12px;
+      border: 2px solid #60a5fa44;
+      border-top-color: #60a5fa;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    .status-pill.busy .spinner { display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Layer Stack Items */
+    .layer-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .layer-card {
+      background: var(--bg-panel-alt);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 9px;
+      font-size: 12px;
+    }
+    .layer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 5px;
+    }
+    .layer-title {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .swatch-picker {
+      width: 22px;
+      height: 20px;
+      padding: 0;
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 4px;
+      background: transparent;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .swatch-picker::-webkit-color-swatch-wrapper {
+      padding: 1px;
+    }
+    .swatch-picker::-webkit-color-swatch {
+      border: none;
+      border-radius: 2px;
+    }
+    .color-badge {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 10px;
+      color: var(--text-muted);
+      background: rgba(0,0,0,0.25);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    .layer-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      gap: 8px;
+    }
+    .layer-meta input[type="range"] {
+      width: 90px;
+      height: 4px;
+    }
+    .layer-sliders {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 5px;
+      padding-top: 5px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .layer-slider-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10.5px;
+      color: var(--text-muted);
+      gap: 6px;
+    }
+    .layer-slider-row span.lbl {
+      min-width: 44px;
+    }
+    .layer-slider-row input[type="range"] {
+      flex: 1;
+      height: 4px;
+    }
+    .layer-slider-row span.val {
+      min-width: 32px;
+      text-align: right;
+      color: #93c5fd;
+      font-variant-numeric: tabular-nums;
+    }
+    .icon-btn {
+      padding: 2px 6px;
+      font-size: 11px;
+      border-radius: 4px;
+    }
+    .icon-btn.muted {
+      opacity: 0.4;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .stat-box {
+      background: var(--bg-panel-alt);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+    }
+    .stat-label {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+    .stat-value {
+      font-size: 14px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header Bar -->
+  <header>
+    <div class="brand">
+      <span class="brand-dot"></span>
+      <span>Brush Vectorizer Studio</span>
+    </div>
+
+    <!-- Source Image Picker & Upload -->
+    <div class="toolbar-group">
+      <select id="imageSelect" onchange="onImageSelectChange()" title="Choose source image"></select>
+      <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="onFileUpload(event)" />
+      <button onclick="document.getElementById('fileInput').click()">Upload Image...</button>
+    </div>
+
+    <!-- Resolution & Full-Res Exports -->
+    <div class="toolbar-group">
+      <label style="font-size:12px; display:flex; align-items:center; gap:5px; cursor:pointer;" title="Use fast 480px preview while dragging sliders">
+        <input type="checkbox" id="fastPreviewToggle" checked />
+        Fast Preview
+      </label>
+      <button onclick="triggerRender('full')" title="Render at 100% original pixel resolution">Render Full-Res</button>
+      <button class="primary" onclick="downloadExport('svg')">Download SVG</button>
+      <button onclick="downloadExport('json')">JSON</button>
+    </div>
+  </header>
+
+  <!-- Main 3-Column Studio Workspace -->
+  <div class="workspace">
+
+    <!-- Left Sidebar: Parameter Controls -->
+    <aside class="sidebar" id="leftSidebar">
+
+      <!-- Pipeline Mode Switcher -->
+      <div class="panel-section">
+        <div class="section-title">Pipeline Output Mode</div>
+        <div class="segmented" id="modeSegmented" style="width:100%; display:grid; grid-template-columns:1fr 1fr;">
+          <button class="active" data-mode="painterly" onclick="setPipelineMode('painterly')" data-tooltip="Filled variable-width SVG brush ribbons, dry-brush bristles, and paper grain.">Painterly Multi-Layer</button>
+          <button data-mode="plotter" onclick="setPipelineMode('plotter')" data-tooltip="Multi-layer physical centerline toolpaths for  pen plotters and acrylic brushes.">Plotter</button>
+        </div>
+      </div>
+
+      <!-- Painterly Mode Controls -->
+      <div id="painterlyControls">
+        <div class="panel-section">
+          <div class="control-row" id="presetSelectRow" data-tooltip="Balanced 7-layer ink wash with natural source palette">
+            <div class="section-title" style="margin-bottom: 6px;">Presets</div>
+            <select id="presetSelect" style="width: 100%;" onchange="if (this.value) applyPreset(this.value)">
+              <option value="marble" data-tooltip="5 layers (Color) — Extreme wet-on-wet turbulence warp with psychedelic difference blending">Acid Marble</option>
+              <option value="bauhaus" data-tooltip="3 layers (Color) — Geometric yellow/red/cobalt constructivist tape strokes with flat chisel nib">Bauhaus Construct</option>
+              <option value="linocut" data-tooltip="2 layers (Duotone) — High-contrast burnt sienna &amp; lamp-black carved relief block print">Binary Linocut</option>
+              <option value="charcoal" data-tooltip="6 layers (Mono) — Heavy paper tooth, coarse dry-brush bristles, rich darks">Bold Charcoal</option>
+              <option value="chalkboard" data-tooltip="2 layers (Mono) — Dusty blue &amp; crisp white chalk strokes on dark slate blackboard">Chalkboard Sketch</option>
+              <option value="engraving" data-tooltip="3 layers (Mono) — Fine intaglio cross-hatched ink lines with directional flow lock">Copperplate Engraving</option>
+              <option value="blueprint" data-tooltip="5 layers (Color) — Luminous ice-cyan architectural etching on deep Prussian blue paper">Cyanotype Etch</option>
+              <option value="cyber" data-tooltip="5 layers (Color) — Glowing synthwave neon filaments on dark obsidian canvas">Cyber Neon</option>
+              <option value="sumie" selected data-tooltip="7 layers (Auto Palette) — Balanced ink wash with natural source palette">Default Sumi-e</option>
+              <option value="wash" data-tooltip="9 layers (Auto Palette) — Soft translucent watercolor layers with wide multiply blending">Delicate Wash</option>
+              <option value="duotone" data-tooltip="2 layers (Color) — Coral-red &amp; deep indigo serigraph overprint with multiply blending">Duotone Screenprint</option>
+              <option value="fauvist" data-tooltip="6 layers (Color) — Oversized expressive impasto slabs with vibrant Fauvist pigments">Fauvist Impasto</option>
+              <option value="ghost" data-tooltip="8 layers (Auto Palette) — Ultra-thin skeletal dry-brush hair striations">Ghost Filaments</option>
+              <option value="chisel" data-tooltip="4 layers (Mono) — Razor-edged 38° calligraphic chisel nib with comet-tail whips">Gothic Chisel</option>
+              <option value="ink" data-tooltip="4 layers (Mono) — Crisp high-contrast calligraphic ink strokes">High-Contrast Ink</option>
+              <option value="zen" data-tooltip="3 layers (Mono) — Minimalist 3-layer reduction keeping only sweeping gesture arcs">Minimalist Zen</option>
+              <option value="topo" data-tooltip="5 layers (Color) — Hollow glowing monoline contour ribbons on dark obsidian canvas">Neon Topo Contours</option>
+              <option value="pastel" data-tooltip="4 layers (Color) — Soft peach, rose, lavender, and twilight plum chalk pastel on warm paper">Pastel Dusk</option>
+              <option value="risograph" data-tooltip="4 layers (Color) — Grainy fluorescent pink/gold/teal overprint with misregistered layers">Risograph Print</option>
+              <option value="sanguine" data-tooltip="3 layers (Color) — Renaissance terracotta red chalk &amp; dark sepia bistre study on parchment">Sanguine Conté</option>
+              <option value="cubist" data-tooltip="5 layers (Color) — Low-poly origami faceted shards split at sharp bends">Shattered Cubist</option>
+              <option value="sumie_duo" data-tooltip="2 layers (Mono) — Fast 2-layer silver wash &amp; jet sumi ink study with sweeping calligraphy">Sumi-e Two-Tone</option>
+              <option value="ukiyoe" data-tooltip="5 layers (Color) — Flat graphic woodblock print layers with Prussian blue &amp; vermilion palette">Ukiyo-e Woodblock</option>
+              <option value="vangogh" data-tooltip="6 layers (Color) — Swirling oscillating brush spines with Impressionist broken-color hue shimmer">Van Gogh Swirl</option>
+            </select>
+            <div class="preset-grid" style="margin-top: 8px;">
+              <button type="button" onclick="exportSettingsJson()" data-tooltip="Export all left-sidebar parameters and right-sidebar layer colors, opacities, blurs, and visibility to a JSON file.">Export Settings</button>
+              <button type="button" onclick="document.getElementById('settingsFileInput').click()" data-tooltip="Import parameters and right-sidebar layer styles from a saved settings JSON file.">Import Settings</button>
+              <input type="file" id="settingsFileInput" accept=".json,application/json" class="hidden" onchange="importSettingsJson(event)" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Physical Plotter & Acrylic Brush Calibration (shown ONLY in Plotter mode) -->
+        <div id="plotterControls" class="hidden" style="display: none;">
+          <div class="panel-section">
+            <div class="section-title">Physical Plotter &amp; Acrylic Brush</div>
+
+            <div class="control-row" data-tooltip="Switch between centerline toolpaths and simulated 100% opaque physical acrylic brush coverage.">
+              <div class="control-label">
+                <span>Plotter Viewport Preview</span>
+              </div>
+              <div class="segmented" id="plotterDisplaySegmented" style="width:100%; display:grid; grid-template-columns:1fr 1fr 1fr;">
+                <button class="active" data-pview="overlay" onclick="setPlotterDisplayMode('overlay')" data-tooltip="Show plotter centerlines overlaid on 55% acrylic brush footprints">Overlay</button>
+                <button data-pview="acrylic" onclick="setPlotterDisplayMode('acrylic')" data-tooltip="Show 100% opaque physical acrylic brush coverage without centerline wireframes">Opaque Acrylic</button>
+                <button data-pview="centerlines" onclick="setPlotterDisplayMode('centerlines')" data-tooltip="Show only the bare plotter centerline toolpaths">Centerlines</button>
+              </div>
+            </div>
+
+            <div class="control-row" data-tooltip="Physical width of the target drawing surface in millimeters (e.g., 210 mm for A4).">
+              <div class="control-label">
+                <span>Canvas Max Width (mm)</span>
+                <span class="control-val" id="val_c_width_mm">210</span>
+              </div>
+              <input type="range" id="c_width_mm" min="50" max="420" step="5" value="210" oninput="onStructuralSlider(this, 'val_c_width_mm')" />
+            </div>
+
+            <div class="control-row" data-tooltip="Physical height of the target drawing surface in millimeters (e.g., 297 mm for A4).">
+              <div class="control-label">
+                <span>Canvas Max Height (mm)</span>
+                <span class="control-val" id="val_c_height_mm">297</span>
+              </div>
+              <input type="range" id="c_height_mm" min="50" max="594" step="5" value="297" oninput="onStructuralSlider(this, 'val_c_height_mm')" />
+            </div>
+
+            <div class="control-row" data-tooltip="Physical acrylic brush half-width at full pressure. Wider areas in each layer are subdivided into parallel centerlines.">
+              <div class="control-label">
+                <span>Max Brush Radius R_max (mm)</span>
+                <span class="control-val" id="val_c_brush_max_radius_mm">3.5</span>
+              </div>
+              <input type="range" id="c_brush_max_radius_mm" min="0.5" max="12.0" step="0.25" value="3.5" oninput="onStructuralSlider(this, 'val_c_brush_max_radius_mm')" />
+            </div>
+
+            <div class="control-row" data-tooltip="Spacing between parallel centerline passes inside wide acrylic fill areas (lower = tighter overlap).">
+              <div class="control-label">
+                <span>Acrylic Pass Stepover Factor</span>
+                <span class="control-val" id="val_c_wash_Stepover_factor">0.65</span>
+              </div>
+              <input type="range" id="c_wash_Stepover_factor" min="0.30" max="1.20" step="0.05" value="0.65" oninput="onStructuralSlider(this, 'val_c_wash_Stepover_factor')" />
+            </div>
+
+            <div class="control-row" data-tooltip="Lead compensation for flexible acrylic brush tips that lag behind the plotter carriage on curves.">
+              <div class="control-label">
+                <span>Bristle Drag Coeff (alpha)</span>
+                <span class="control-val" id="val_c_brush_drag_coeff">0.85</span>
+              </div>
+              <input type="range" id="c_brush_drag_coeff" min="0.00" max="2.00" step="0.05" value="0.85" oninput="onStructuralSlider(this, 'val_c_brush_drag_coeff')" />
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <div class="section-title">1. Color Palette & Layer Decomposition</div>
+
+          <div class="checkbox-group" data-tooltip="Extract dominant colors from the photo or paint in single-ink grayscale tones.">
+            <div class="checkbox-row">
+              <span>Palette Mode</span>
+              <select id="p_color_palette_mode" onchange="onPaletteModeChange()">
+                <option value="auto_palette" selected>Auto Source Palette (K Colors)</option>
+                <option value="monochrome">Monochrome Tonal</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="control-row" data-tooltip="Number of paint passes stacked from light background washes to dark detail accents.">
+            <div class="control-label">
+              <span>Color / Tonal Layers (K)</span>
+              <span class="control-val" id="val_num_tonal_layers">7</span>
+            </div>
+            <input type="range" id="p_num_tonal_layers" min="2" max="12" step="1" value="7" oninput="onLayerCountSlider(this)" />
+          </div>
+
+          <div class="control-row" data-tooltip="How dark a pixel must be to get painted at all. Lower = more background coverage; higher = more bare paper.">
+            <div class="control-label">
+              <span>Faintest Wash Threshold (D_min)</span>
+              <span class="control-val" id="val_min_density_threshold">0.10</span>
+            </div>
+            <input type="range" id="p_min_density_threshold" min="0.03" max="0.55" step="0.01" value="0.10" oninput="onStructuralSlider(this, 'val_min_density_threshold')" />
+          </div>
+
+          <div class="control-row" data-tooltip="Darkness cutoff for the final detail layer. Higher = reserves the top layer for only the deepest shadows.">
+            <div class="control-label">
+              <span>Darkest Accent Threshold (D_max)</span>
+              <span class="control-val" id="val_max_density_threshold">0.84</span>
+            </div>
+            <input type="range" id="p_max_density_threshold" min="0.35" max="0.96" step="0.01" value="0.84" oninput="onStructuralSlider(this, 'val_max_density_threshold')" />
+          </div>
+
+          <div class="control-row" data-tooltip="Transparency of the lightest underpainting layer (lower = softer watercolor glaze).">
+            <div class="control-label">
+              <span>Base Wash Opacity</span>
+              <span class="control-val" id="val_op_min">0.28</span>
+            </div>
+            <input type="range" id="p_op_min" min="0.05" max="0.80" step="0.02" value="0.28" oninput="onStructuralSlider(this, 'val_op_min')" />
+          </div>
+
+          <div class="control-row" data-tooltip="Solidity of the darkest foreground strokes (higher = bold, opaque ink marks).">
+            <div class="control-label">
+              <span>Dark Accent Opacity</span>
+              <span class="control-val" id="val_op_max">0.94</span>
+            </div>
+            <input type="range" id="p_op_max" min="0.30" max="1.00" step="0.02" value="0.94" oninput="onStructuralSlider(this, 'val_op_max')" />
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <div class="section-title">2. Variable Width & Dry-Brush Bristles</div>
+
+          <div class="control-row" data-tooltip="Multiplies the thickness of every brush stroke (thin sketching vs. broad impasto slabs).">
+            <div class="control-label">
+              <span>Stroke Width Scale</span>
+              <span class="control-val" id="val_stroke_width_scale">1.12</span>
+            </div>
+            <input type="range" id="p_stroke_width_scale" min="0.40" max="2.40" step="0.04" value="1.12" oninput="onStructuralSlider(this, 'val_stroke_width_scale')" />
+          </div>
+
+          <div class="control-row" data-tooltip="Number of split hair streaks drawn inside each stroke for a textured brush feel (0 = flat graphic shapes).">
+            <div class="control-label">
+              <span>Bristle Filaments per Stroke</span>
+              <span class="control-val" id="val_bristle_count">5</span>
+            </div>
+            <input type="range" id="p_bristle_count" min="0" max="12" step="1" value="5" oninput="onStructuralSlider(this, 'val_bristle_count')" />
+          </div>
+
+          <div class="control-row" data-tooltip="Controls edge roughness and &quot;flying white&quot; gaps where paper shows through fast brush strokes.">
+            <div class="control-label">
+              <span>Dry-Brush / Flying-White Strength</span>
+              <span class="control-val" id="val_dry_brush_strength">0.65</span>
+            </div>
+            <input type="range" id="p_dry_brush_strength" min="0.00" max="1.00" step="0.05" value="0.65" oninput="onStructuralSlider(this, 'val_dry_brush_strength')" />
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <div class="section-title">3. Topology & Spline Smoothing</div>
+
+          <div class="control-row" data-tooltip="Connects broken, sketchy pixel gaps along the stroke direction before tracing paths.">
+            <div class="control-label">
+              <span>Anisotropic Gap Bridging (px)</span>
+              <span class="control-val" id="val_anisotropic_sigma">1.2</span>
+            </div>
+            <input type="range" id="p_anisotropic_sigma" min="0.0" max="3.0" step="0.1" value="1.2" oninput="onStructuralSlider(this, 'val_anisotropic_sigma')" />
+          </div>
+
+          <div class="control-row" data-tooltip="Removes short stubby side-twigs sticking out from main brush strokes. Higher = cleaner, simpler paths.">
+            <div class="control-label">
+              <span>Spur Pruning Ratio</span>
+              <span class="control-val" id="val_spur_prune_factor">1.25</span>
+            </div>
+            <input type="range" id="p_spur_prune_factor" min="0.50" max="2.80" step="0.05" value="1.25" oninput="onStructuralSlider(this, 'val_spur_prune_factor')" />
+          </div>
+
+          <div class="control-row" data-tooltip="Discards tiny paint specks and short ticks shorter than this pixel length.">
+            <div class="control-label">
+              <span>Min Stroke Length (px)</span>
+              <span class="control-val" id="val_min_stroke_length_px">6.0</span>
+            </div>
+            <input type="range" id="p_min_stroke_length_px" min="2.0" max="30.0" step="1.0" value="6.0" oninput="onStructuralSlider(this, 'val_min_stroke_length_px')" />
+          </div>
+
+          <div class="control-row" data-tooltip="Maximum bend angle allowed when merging crossing strokes into one continuous line. Lower = splits strokes at sharp corners.">
+            <div class="control-label">
+              <span>Junction Max Deflection (deg)</span>
+              <span class="control-val" id="val_max_deflection_deg">65</span>
+            </div>
+            <input type="range" id="p_max_deflection_deg" min="20" max="110" step="5" value="65" oninput="onStructuralSlider(this, 'val_max_deflection_deg')" />
+          </div>
+
+          <div class="control-row" data-tooltip="Rounds out jagged pixel paths into fluid curves (0.0 = sharp angular facets; higher = sweeping arcs).">
+            <div class="control-label">
+              <span>Spline Smoothing Factor</span>
+              <span class="control-val" id="val_spline_smoothing_factor">0.40</span>
+            </div>
+            <input type="range" id="p_spline_smoothing_factor" min="0.00" max="1.50" step="0.05" value="0.40" oninput="onStructuralSlider(this, 'val_spline_smoothing_factor')" />
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <div class="section-title">4. Canvas & Paper Grain</div>
+
+          <div class="control-row" data-tooltip="Adds natural woven paper tooth texture across the background canvas.">
+            <div class="control-label">
+              <span>Paper Grain Strength</span>
+              <span class="control-val" id="val_paper_grain_strength">0.22</span>
+            </div>
+            <input type="range" id="p_paper_grain_strength" min="0.00" max="1.00" step="0.02" value="0.22" oninput="onPaperGrainInput(this)" />
+          </div>
+
+          <div class="checkbox-group" data-tooltip="Automatically samples the background paper color from the brightest areas of your image.">
+            <div class="checkbox-row">
+              <label for="p_match_source_paper_tone">Match Source Paper Tone</label>
+              <input type="checkbox" id="p_match_source_paper_tone" checked onchange="scheduleRender()" />
+            </div>
+          </div>
+
+          <div class="checkbox-group" data-tooltip="Pick a custom canvas background color (automatically unchecks Match Source Paper Tone).">
+            <div class="checkbox-row">
+              <label for="p_fallback_paper_hex">Custom Paper Color</label>
+              <input type="color" id="p_fallback_paper_hex" value="#f4f1ea" oninput="onCustomPaperColor(this.value)" />
+            </div>
+          </div>
+
+          <div class="checkbox-group" data-tooltip="Evens out shadows or camera vignetting across photographed paper so background shading isn't mistaken for paint.">
+            <div class="checkbox-row">
+              <label for="p_normalize_paper_illumination">Normalize Lighting Shading</label>
+              <input type="checkbox" id="p_normalize_paper_illumination" checked onchange="scheduleRender()" />
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <div class="section-title">5. Brush Shape & Geometry Mutations</div>
+
+          <div class="control-row" data-tooltip="0.0 = round brush; higher = chisel-tip calligraphy pen or palette knife that thins on cross-strokes.">
+            <div class="control-label">
+              <span>Calligraphic Nib Flatness</span>
+              <span class="control-val" id="val_nib_flatness">0.00</span>
+            </div>
+            <input type="range" id="p_nib_flatness" min="0.00" max="0.95" step="0.05" value="0.00" oninput="onStructuralSlider(this, 'val_nib_flatness')" />
+          </div>
+
+          <div class="control-row" data-tooltip="Orientation angle of the flat chisel nib when Nib Flatness is above 0.">
+            <div class="control-label">
+              <span>Calligraphic Nib Angle (deg)</span>
+              <span class="control-val" id="val_nib_angle_deg">35</span>
+            </div>
+            <input type="range" id="p_nib_angle_deg" min="0" max="180" step="5" value="35" oninput="onStructuralSlider(this, 'val_nib_angle_deg')" />
+          </div>
+
+          <div class="control-row" data-tooltip="0 = blunt architectural tape; 1 = natural; &gt;1.5 = sharp comet whip; &lt;0 = inverted tadpole drops.">
+            <div class="control-label">
+              <span>Taper / Whip Profile</span>
+              <span class="control-val" id="val_taper_power">1.00</span>
+            </div>
+            <input type="range" id="p_taper_power" min="-2.00" max="4.00" step="0.10" value="1.00" oninput="onStructuralSlider(this, 'val_taper_power')" />
+          </div>
+
+          <div class="control-row" data-tooltip="1 = natural; &gt;1 = extreme thick/thin drama; 0 = uniform monoline contour; &lt;0 = inverted widths.">
+            <div class="control-label">
+              <span>Width Contrast / Inversion (Gamma)</span>
+              <span class="control-val" id="val_radius_gamma">1.00</span>
+            </div>
+            <input type="range" id="p_radius_gamma" min="-1.50" max="2.50" step="0.10" value="1.00" oninput="onStructuralSlider(this, 'val_radius_gamma')" />
+          </div>
+
+          <div class="control-row" data-tooltip="Coarsens smooth curves into origami shards, crystalline polygons, and stained-glass facets.">
+            <div class="control-label">
+              <span>Low-Poly Facet Decimation</span>
+              <span class="control-val" id="val_polygon_decimation">0.00</span>
+            </div>
+            <input type="range" id="p_polygon_decimation" min="0.00" max="0.95" step="0.05" value="0.00" oninput="onStructuralSlider(this, 'val_polygon_decimation')" />
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <div class="section-title">6. Spine Distortion & Flow Chaos</div>
+
+          <div class="control-row" data-tooltip="Displaces stroke spines with a perpendicular sine wave for Van Gogh swirls or nervous tremors.">
+            <div class="control-label">
+              <span>Spine Wave / Swirl Amplitude (px)</span>
+              <span class="control-val" id="val_spine_wave_amplitude">0.0</span>
+            </div>
+            <input type="range" id="p_spine_wave_amplitude" min="0.0" max="35.0" step="0.5" value="0.0" oninput="onStructuralSlider(this, 'val_spine_wave_amplitude')" />
+          </div>
+
+          <div class="control-row" data-tooltip="Low = sweeping S-curve currents; high = rapid seismograph / woodcut engraving vibration.">
+            <div class="control-label">
+              <span>Spine Wave Frequency (cycles)</span>
+              <span class="control-val" id="val_spine_wave_frequency">2.0</span>
+            </div>
+            <input type="range" id="p_spine_wave_frequency" min="0.25" max="16.0" step="0.25" value="2.0" oninput="onStructuralSlider(this, 'val_spine_wave_frequency')" />
+          </div>
+
+          <div class="control-row" data-tooltip="How far bristle hairs fan out at the tail of each stroke (&gt;1.5 = frayed broom / firework splay).">
+            <div class="control-label">
+              <span>Bristle Splay Explosion</span>
+              <span class="control-val" id="val_bristle_splay">0.14</span>
+            </div>
+            <input type="range" id="p_bristle_splay" min="0.00" max="4.00" step="0.05" value="0.14" oninput="onStructuralSlider(this, 'val_bristle_splay')" />
+          </div>
+
+          <div class="control-row" data-tooltip="Shoots stroke start/end tangents past corners like a rapid architectural concept sketch.">
+            <div class="control-label">
+              <span>Tangent Over-Extension (px)</span>
+              <span class="control-val" id="val_stroke_extension_px">0.0</span>
+            </div>
+            <input type="range" id="p_stroke_extension_px" min="0.0" max="50.0" step="1.0" value="0.0" oninput="onStructuralSlider(this, 'val_stroke_extension_px')" />
+          </div>
+
+          <div class="control-row" data-tooltip="Forces pixel bridging along a fixed global angle to create rain streaks or scanline glitches.">
+            <div class="control-label">
+              <span>Directional Flow Lock Strength</span>
+              <span class="control-val" id="val_flow_lock_strength">0.00</span>
+            </div>
+            <input type="range" id="p_flow_lock_strength" min="0.00" max="1.00" step="0.05" value="0.00" oninput="onStructuralSlider(this, 'val_flow_lock_strength')" />
+          </div>
+
+          <div class="control-row" data-tooltip="Global streak angle when Directional Flow Lock Strength is above 0 (0° = horizontal, 90° = vertical).">
+            <div class="control-label">
+              <span>Flow Lock Angle (deg)</span>
+              <span class="control-val" id="val_flow_lock_angle_deg">45</span>
+            </div>
+            <input type="range" id="p_flow_lock_angle_deg" min="0" max="180" step="5" value="45" oninput="onStructuralSlider(this, 'val_flow_lock_angle_deg')" />
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <div class="section-title">7. Optical, Blending & Print Effects</div>
+
+          <div class="checkbox-group" data-tooltip="How stacked paint layers optically interact (Multiply = ink overprint; Difference = psychedelic).">
+            <div class="checkbox-row">
+              <span>Layer Blend Mode</span>
+              <select id="p_blend_mode" onchange="onBlendModeChange(this.value)">
+                <option value="normal" selected>Normal (Opaque Paint)</option>
+                <option value="multiply">Multiply (Overprint Glaze)</option>
+                <option value="screen">Screen (Neon Light)</option>
+                <option value="overlay">Overlay (High Contrast)</option>
+                <option value="difference">Difference (Solarized)</option>
+                <option value="exclusion">Exclusion (Matte Invert)</option>
+                <option value="color-dodge">Color Dodge (Luminous)</option>
+                <option value="hard-light">Hard Light (Poster)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="checkbox-group" data-tooltip="Switch between solid brushwork, comic/woodblock keylined strokes, or hollow topographic ribbons.">
+            <div class="checkbox-row">
+              <span>Stroke Fill / Outline Mode</span>
+              <select id="p_stroke_outline_mode" onchange="scheduleRender()">
+                <option value="filled" selected>Solid Paint Fill</option>
+                <option value="outlined">Paint + Keyline Border</option>
+                <option value="hollow">Hollow Contour Wireframe</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="control-row" data-tooltip="Line thickness used when Stroke Fill / Outline Mode is set to Keyline Border or Hollow Wireframe.">
+            <div class="control-label">
+              <span>Contour / Outline Width (px)</span>
+              <span class="control-val" id="val_stroke_outline_width">1.2</span>
+            </div>
+            <input type="range" id="p_stroke_outline_width" min="0.2" max="6.0" step="0.2" value="1.2" oninput="onStructuralSlider(this, 'val_stroke_outline_width')" />
+          </div>
+
+          <div class="control-row" data-tooltip="Shifts individual brush strokes around the layer color for Impressionist broken-color shimmer.">
+            <div class="control-label">
+              <span>Per-Stroke Hue Jitter</span>
+              <span class="control-val" id="val_stroke_hue_jitter">0.00</span>
+            </div>
+            <input type="range" id="p_stroke_hue_jitter" min="0.00" max="1.00" step="0.05" value="0.00" oninput="onStructuralSlider(this, 'val_stroke_hue_jitter')" />
+          </div>
+
+          <div class="control-row" data-tooltip="SVG displacement distortion (0 = crisp vector edges; &gt;3 = wet-on-wet marbled ink blooms).">
+            <div class="control-label">
+              <span>Wet-Ink Turbulence Warp</span>
+              <span class="control-val" id="val_turbulence_scale">1.0</span>
+            </div>
+            <input type="range" id="p_turbulence_scale" min="0.0" max="10.0" step="0.2" value="1.0" oninput="onStructuralSlider(this, 'val_turbulence_scale')" />
+          </div>
+
+          <div class="control-row" data-tooltip="Offsets each color plate in a golden-angle spiral to mimic misregistered vintage screenprints.">
+            <div class="control-label">
+              <span>Risograph Layer Misalignment (px)</span>
+              <span class="control-val" id="val_layer_misalignment_px">0.0</span>
+            </div>
+            <input type="range" id="p_layer_misalignment_px" min="0.0" max="25.0" step="0.5" value="0.0" oninput="onMisalignmentSlider(this)" />
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- Floating Left-Sidebar Tooltip -->
+    <div id="sidebarTooltip" class="sidebar-tooltip"></div>
+
+    <!-- Center Interactive Pan/Zoom Viewport -->
+    <main class="viewport-container" id="viewport"
+          ondragover="event.preventDefault()"
+          ondrop="onViewportDrop(event)">
+
+      <div class="status-pill" id="statusPill">
+        <span class="spinner"></span>
+        <span id="statusText">Ready</span>
+      </div>
+
+      <div class="canvas-stage" id="canvasStage"></div>
+
+      <div class="viewport-hud">
+        <button class="icon-btn" onclick="zoomBy(1/1.25)">-</button>
+        <span class="zoom-readout" id="zoomReadout">100%</span>
+        <button class="icon-btn" onclick="zoomBy(1.25)">+</button>
+        <button class="icon-btn" onclick="fitStageToViewport()">Fit</button>
+        <button class="icon-btn" onclick="resetZoom100()">1:1</button>
+      </div>
+    </main>
+
+    <!-- Right Sidebar: Layer Inspector & Live Stats -->
+    <aside class="sidebar right">
+      <div class="panel-section">
+        <div class="section-title">Render Metrics</div>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-label">Total Strokes</div>
+            <div class="stat-value" id="statStrokes">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Render Time</div>
+            <div class="stat-value" id="statTime">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Source Size</div>
+            <div class="stat-value" id="statSourceDim" style="font-size:12px;">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Active Tier</div>
+            <div class="stat-value" id="statResTier" style="font-size:12px;">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-section" style="flex:1;">
+        <div class="section-title">
+          <span>Interactive SVG Layers</span>
+          <div style="display:flex; gap:4px;">
+            <button class="icon-btn" onclick="resetLayerColors()" title="Reset all layer colors to source palette">Reset Colors</button>
+            <button class="icon-btn" onclick="showAllLayers()" title="Restore visibility and opacity of all layers">Show All</button>
+          </div>
+        </div>
+        <div class="layer-list" id="layerList"></div>
+      </div>
+    </aside>
+
+  </div>
+
+  <script>
+    let state = {
+      mode: 'painterly',
+      plotterDisplayMode: 'overlay',
+      imageId: '',
+      zoom: 1.0,
+      panX: 40,
+      panY: 40,
+      isPanning: false,
+      startPanX: 0,
+      startPanY: 0,
+      lastResult: null,
+      debounceTimer: null,
+      activeRequestId: 0,
+      customLayerColors: [],
+      customLayerBlurs: [],
+      layerUiOverrides: {},
+    };
+
+    const viewport = document.getElementById('viewport');
+    const stage = document.getElementById('canvasStage');
+    let pyWorker = null;
+    let nextWorkerCallId = 1;
+    const pendingWorkerCalls = new Map();
+
+    function getPyWorker() {
+      if (pyWorker) return pyWorker;
+      pyWorker = new Worker('./pyodide_worker.js');
+      pyWorker.onmessage = (event) => {
+        const msg = event.data;
+        if (!msg) return;
+        if (msg.type === 'status') {
+          setStatus(msg.busy, msg.text);
+        } else if (msg.type === 'response') {
+          const pending = pendingWorkerCalls.get(msg.callId);
+          if (pending) {
+            pendingWorkerCalls.delete(msg.callId);
+            if (msg.error) pending.reject(new Error(msg.error));
+            else pending.resolve(msg.data);
+          }
+        } else if (msg.type === 'renderResult') {
+          handleRenderResponse(msg.reqId, msg.data);
+        } else if (msg.type === 'error') {
+          setStatus(false, `WASM Error: ${msg.error}`);
+        }
+      };
+      return pyWorker;
+    }
+
+    function callPyWorker(type, payload = {}, transfer = []) {
+      const worker = getPyWorker();
+      const callId = nextWorkerCallId++;
+      return new Promise((resolve, reject) => {
+        pendingWorkerCalls.set(callId, { resolve, reject });
+        worker.postMessage({ type, callId, ...payload }, transfer);
+      });
+    }
+
+    // Initialize samples and first render
+    async function initStudio() {
+      setupPanZoom();
+      setupSidebarTooltips();
+      try {
+        await loadSamples();
+        triggerRender('preview');
+      } catch (err) {
+        setStatus(false, `Initialization failed: ${err.message}`);
+      }
+    }
+
+    function setupSidebarTooltips() {
+      const sidebar = document.getElementById('leftSidebar');
+      const tooltip = document.getElementById('sidebarTooltip');
+      if (!sidebar || !tooltip) return;
+
+      let activeEl = null;
+
+      function showTooltipFor(el) {
+        const text = el.getAttribute('data-tooltip');
+        if (!text) return;
+        activeEl = el;
+        tooltip.textContent = text;
+        tooltip.classList.add('visible');
+
+        const rect = el.getBoundingClientRect();
+        const sidebarRect = sidebar.getBoundingClientRect();
+        const tipHeight = tooltip.offsetHeight || 42;
+        let top = rect.top + (rect.height - tipHeight) / 2;
+        top = Math.max(58, Math.min(window.innerHeight - tipHeight - 12, top));
+        tooltip.style.left = `${sidebarRect.right + 10}px`;
+        tooltip.style.top = `${top}px`;
+      }
+
+      function hideTooltip() {
+        activeEl = null;
+        tooltip.classList.remove('visible');
+      }
+
+      sidebar.addEventListener('mouseover', (e) => {
+        const target = e.target.closest('[data-tooltip]');
+        if (target && sidebar.contains(target)) {
+          if (target !== activeEl) {
+            showTooltipFor(target);
+          }
+        } else {
+          hideTooltip();
+        }
+      });
+
+      sidebar.addEventListener('mouseleave', hideTooltip);
+      sidebar.addEventListener('scroll', hideTooltip, { passive: true });
+    }
+
+    async function loadSamples(selectId = null) {
+      const data = await callPyWorker('getSamples');
+      const sel = document.getElementById('imageSelect');
+      sel.innerHTML = '';
+      for (const item of data.samples) {
+        const opt = document.createElement('option');
+        opt.value = item.id;
+        opt.textContent = `${item.name} (${item.width}×${item.height})`;
+        sel.appendChild(opt);
+      }
+      if (selectId) {
+        sel.value = selectId;
+      } else if (data.samples.length > 0) {
+        // Prefer surreal portrait or color landscape demo if present
+        const preferred =
+          data.samples.find(s => s.id.includes('surreal')) ||
+          data.samples.find(s => s.id.includes('color_landscape'));
+        sel.value = preferred ? preferred.id : data.samples[0].id;
+      }
+      state.imageId = sel.value;
+    }
+
+    function onImageSelectChange() {
+      state.imageId = document.getElementById('imageSelect').value;
+      state.customLayerColors = [];
+      state.customLayerBlurs = [];
+      state.layerUiOverrides = {};
+      triggerRender(getPreferredResolution());
+    }
+
+    async function onFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      await uploadFileObject(file);
+    }
+
+    async function onViewportDrop(event) {
+      event.preventDefault();
+      if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+        await uploadFileObject(event.dataTransfer.files[0]);
+      }
+    }
+
+    async function uploadFileObject(file) {
+      setStatus(true, `Loading ${file.name}...`);
+      const buffer = await file.arrayBuffer();
+      const data = await callPyWorker('upload', { filename: file.name, buffer }, [buffer]);
+      if (data && data.id) {
+        state.customLayerColors = [];
+        state.customLayerBlurs = [];
+        state.layerUiOverrides = {};
+        await loadSamples(data.id);
+        triggerRender(getPreferredResolution());
+      }
+    }
+
+    function setPipelineMode(mode) {
+      state.mode = mode;
+      document.querySelectorAll('#modeSegmented button').forEach(b => {
+        b.classList.toggle('active', b.dataset.mode === mode);
+      });
+      const plotterPanel = document.getElementById('plotterControls');
+      if (plotterPanel) {
+        const isPlotter = (mode === 'plotter');
+        plotterPanel.classList.toggle('hidden', !isPlotter);
+        plotterPanel.style.display = isPlotter ? 'block' : 'none';
+      }
+      triggerRender(getPreferredResolution());
+    }
+
+    async function downloadExport(fmt) {
+      try {
+        setStatus(true, `Preparing Full-Res ${fmt.toUpperCase()} export...`);
+        const exp = await callPyWorker('export', { fmt, params: collectParams() });
+        const blob = new Blob([exp.content], { type: exp.mime_type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = exp.filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        setStatus(false, `Exported ${exp.filename}`);
+      } catch (err) {
+        setStatus(false, `Export failed: ${err.message}`);
+      }
+    }
+
+    function getPreferredResolution() {
+      return document.getElementById('fastPreviewToggle').checked ? 'preview' : 'full';
+    }
+
+    function onStructuralSlider(el, labelId) {
+      document.getElementById(labelId).textContent = el.value;
+      scheduleRender();
+    }
+
+    function resampleHexPalette(colors, targetK) {
+      const valid = colors.filter(c => typeof c === 'string' && c.startsWith('#'));
+      if (valid.length === 0) return [];
+      if (valid.length === targetK) return [...valid];
+      if (valid.length === 1) return Array(targetK).fill(valid[0]);
+      const out = [];
+      for (let i = 0; i < targetK; i++) {
+        const pos = (i / Math.max(targetK - 1, 1)) * (valid.length - 1);
+        const i0 = Math.floor(pos);
+        const i1 = Math.min(valid.length - 1, i0 + 1);
+        const frac = pos - i0;
+        const [r0, g0, b0] = hexToRgb(valid[i0]);
+        const [r1, g1, b1] = hexToRgb(valid[i1]);
+        out.push(rgbToHex(
+          r0 + frac * (r1 - r0),
+          g0 + frac * (g1 - g0),
+          b0 + frac * (b1 - b0)
+        ));
+      }
+      return out;
+    }
+
+    function onLayerCountSlider(el) {
+      const newK = parseInt(el.value, 10);
+      document.getElementById('val_num_tonal_layers').textContent = newK;
+      if (state.customLayerColors.length > 0 && state.customLayerColors.every(c => typeof c === 'string' && c.startsWith('#'))) {
+        state.customLayerColors = resampleHexPalette(state.customLayerColors, newK);
+      } else {
+        state.customLayerColors = [];
+      }
+      state.customLayerBlurs = [];
+      state.layerUiOverrides = {};
+      scheduleRender();
+    }
+
+    function onPaletteModeChange() {
+      state.customLayerColors = [];
+      triggerRender(getPreferredResolution());
+    }
+
+    function resetLayerColors() {
+      if (state.debounceTimer) {
+        clearTimeout(state.debounceTimer);
+        state.debounceTimer = null;
+      }
+      if (document.activeElement && document.activeElement.blur) {
+        document.activeElement.blur();
+      }
+      state.ignoreColorEventsUntil = Date.now() + 400;
+      state.lastColorInputTime = 0;
+      state.customLayerColors = [];
+      state.customLayerBlurs = [];
+      document.getElementById('p_color_palette_mode').value = 'auto_palette';
+      document.getElementById('p_match_source_paper_tone').checked = true;
+
+      // Immediately restore extracted auto_color_hex in the live SVG DOM and swatches
+      if (state.lastResult && state.lastResult.layers) {
+        for (const layer of state.lastResult.layers) {
+          const autoHex = layer.auto_color_hex || layer.color_hex;
+          layer.color_hex = autoHex;
+          const swatch = document.getElementById(`swatch_${layer.dom_id}`);
+          if (swatch && swatch.tagName === 'INPUT') swatch.value = autoHex;
+          const badge = document.getElementById(`badge_${layer.dom_id}`);
+          if (badge) badge.textContent = autoHex.toUpperCase();
+          if (layer.layer_index >= 0) {
+            applyLayerColorToSvgDom(layer.layer_index, layer.dom_id, autoHex);
+          }
+        }
+      }
+      triggerRender(getPreferredResolution());
+    }
+
+    function hexToRgb(hex) {
+      const clean = (hex || '#404040').replace('#', '');
+      const num = parseInt(clean, 16);
+      if (isNaN(num)) return [64, 64, 64];
+      return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+    }
+
+    function rgbToHex(r, g, b) {
+      const clamp = (v) => Math.max(0, Math.min(255, Math.round(v)));
+      return '#' + [clamp(r), clamp(g), clamp(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+    }
+
+    function modulateHexShade(hex, shadeFactor) {
+      const [r, g, b] = hexToRgb(hex);
+      const sf = (isNaN(shadeFactor) || shadeFactor <= 0) ? 1.0 : shadeFactor;
+      if (sf >= 1.0) {
+        // Darken slightly for wet brush entry press or bristle core
+        const darkMult = Math.max(0.25, 1.0 / sf);
+        return rgbToHex(r * darkMult, g * darkMult, b * darkMult);
+      } else {
+        // Feather slightly toward paper tone at dry-brush exit lift
+        const paperHex = (state.lastResult && state.lastResult.paper_hex) ? state.lastResult.paper_hex : '#f4f1ea';
+        const [pr, pg, pb] = hexToRgb(paperHex);
+        const t = Math.max(0.35, Math.min(1.0, sf));
+        return rgbToHex(
+          t * r + (1.0 - t) * pr,
+          t * g + (1.0 - t) * pg,
+          t * b + (1.0 - t) * pb
+        );
+      }
+    }
+
+    function applyLayerColorToSvgDom(layerIdx, domId, hexColor) {
+      const svgEl = stage.querySelector('svg');
+      if (!svgEl) return;
+      svgEl.querySelectorAll(`linearGradient[data-layer-index="${layerIdx}"] stop`).forEach(stop => {
+        const shade = parseFloat(stop.getAttribute('data-shade') || '1.0');
+        stop.setAttribute('stop-color', modulateHexShade(hexColor, shade));
+      });
+      const layerGroup = svgEl.querySelector(`#${CSS.escape(domId)}`);
+      if (layerGroup) {
+        layerGroup.setAttribute('data-color-hex', hexColor);
+        if (state.mode === 'plotter') {
+          layerGroup.setAttribute('stroke', hexColor);
+        }
+        layerGroup.querySelectorAll('path.bristle-path').forEach(p => {
+          const shade = parseFloat(p.getAttribute('data-shade') || '1.14');
+          p.setAttribute('fill', modulateHexShade(hexColor, shade));
+        });
+        layerGroup.querySelectorAll('path.centerline-path').forEach(p => {
+          p.setAttribute('stroke', hexColor);
+        });
+      }
+      const previewGroup = svgEl.querySelector(`g[data-preview-for="${CSS.escape(domId)}"]`);
+      if (previewGroup) {
+        previewGroup.querySelectorAll('path.footprint-preview-path').forEach(p => {
+          p.setAttribute('fill', hexColor);
+        });
+      }
+    }
+
+    function onLayerColorChange(layerIdx, domId, hexColor, badgeId) {
+      if (state.ignoreColorEventsUntil && Date.now() < state.ignoreColorEventsUntil) {
+        return;
+      }
+      state.lastColorInputTime = Date.now();
+      if (badgeId) {
+        const badge = document.getElementById(badgeId);
+        if (badge) badge.textContent = hexColor.toUpperCase();
+      }
+
+      if (layerIdx === -1) {
+        document.getElementById('p_fallback_paper_hex').value = hexColor;
+        onCustomPaperColor(hexColor);
+        return;
+      }
+
+      // 1. Instant 60fps SVG DOM update for all strokes & bristles in this layer
+      applyLayerColorToSvgDom(layerIdx, domId, hexColor);
+
+      // 2. Persist override in state.customLayerColors
+      const numLayers = parseInt(document.getElementById('p_num_tonal_layers').value, 10);
+      while (state.customLayerColors.length < numLayers) {
+        state.customLayerColors.push(null);
+      }
+      state.customLayerColors[layerIdx] = hexColor;
+      if (state.lastResult && state.lastResult.layers) {
+        const found = state.lastResult.layers.find(l => l.layer_index === layerIdx);
+        if (found) found.color_hex = hexColor;
+      }
+    }
+
+    function getRenderResScale() {
+      if (state.lastResult && state.lastResult.render_width && state.lastResult.render_height) {
+        return Math.max(1.0, Math.max(state.lastResult.render_width, state.lastResult.render_height) / 480.0);
+      }
+      return 1.0;
+    }
+
+    function onLayerBlurChange(layerIdx, domId, blurVal, valLabelId) {
+      const sigma = parseFloat(blurVal);
+      if (valLabelId) {
+        const lbl = document.getElementById(valLabelId);
+        if (lbl) lbl.textContent = `${sigma.toFixed(1)}px`;
+      }
+      if (layerIdx < 0) return;
+
+      // 1. Instant 60fps SVG DOM update on #blur_layer_{idx}
+      const svgEl = stage.querySelector('svg');
+      if (svgEl) {
+        const resScale = getRenderResScale();
+        const blurNode = svgEl.querySelector(`#blur_layer_${layerIdx}`);
+        if (blurNode) {
+          blurNode.setAttribute('stdDeviation', (sigma * resScale).toFixed(2));
+        }
+        const layerGroup = svgEl.querySelector(`#${CSS.escape(domId)}`);
+        if (layerGroup) {
+          if (sigma > 0.02) {
+            layerGroup.setAttribute('filter', `url(#filter_layer_${layerIdx})`);
+          } else {
+            // Keep displacement filter on lower layers if dry brush is active, else remove filter when blur=0
+            const numLayers = parseInt(document.getElementById('p_num_tonal_layers').value, 10);
+            if (layerIdx >= Math.max(2, Math.floor((2 * numLayers) / 3))) {
+              layerGroup.removeAttribute('filter');
+            }
+          }
+        }
+      }
+
+      // 2. Save in state.customLayerBlurs
+      const numLayers = parseInt(document.getElementById('p_num_tonal_layers').value, 10);
+      while (state.customLayerBlurs.length < numLayers) {
+        state.customLayerBlurs.push(null);
+      }
+      state.customLayerBlurs[layerIdx] = sigma;
+      if (state.lastResult && state.lastResult.layers) {
+        const found = state.lastResult.layers.find(l => l.layer_index === layerIdx);
+        if (found) found.blur = sigma;
+      }
+    }
+
+    function onPaperGrainInput(el) {
+      document.getElementById('val_paper_grain_strength').textContent = el.value;
+      // Instant 60fps client-side filter update if SVG is mounted
+      const g = parseFloat(el.value);
+      const svgEl = stage.querySelector('svg');
+      if (svgEl) {
+        const slope = (g * 0.14).toFixed(3);
+        const intercept = (1.0 - g * 0.07).toFixed(3);
+        svgEl.querySelectorAll('#filter_paper_grain feComponentTransfer > *').forEach(fn => {
+          fn.setAttribute('slope', slope);
+          fn.setAttribute('intercept', intercept);
+        });
+      }
+    }
+
+    function onCustomPaperColor(hexColor) {
+      document.getElementById('p_match_source_paper_tone').checked = false;
+      if (state.lastResult) {
+        state.lastResult.paper_hex = hexColor;
+        if (state.lastResult.layers) {
+          const paperLayer = state.lastResult.layers.find(l => l.layer_index === -1);
+          if (paperLayer) paperLayer.color_hex = hexColor;
+        }
+      }
+      const paperSwatch = document.getElementById('swatch_layer_0_paper_canvas');
+      if (paperSwatch && paperSwatch.tagName === 'INPUT') paperSwatch.value = hexColor;
+      const paperBadge = document.getElementById('badge_layer_0_paper_canvas');
+      if (paperBadge) paperBadge.textContent = hexColor.toUpperCase();
+
+      const svgEl = stage.querySelector('svg');
+      if (svgEl) {
+        const rect = svgEl.querySelector('#layer_0_paper_canvas rect');
+        if (rect) rect.setAttribute('fill', hexColor);
+      }
+    }
+
+    function onBlendModeChange(blendVal) {
+      const svgEl = stage.querySelector('svg');
+      if (svgEl) {
+        svgEl.querySelectorAll('g[data-layer-index]').forEach(g => {
+          if (blendVal === 'normal') {
+            g.style.mixBlendMode = '';
+          } else {
+            g.style.mixBlendMode = blendVal;
+          }
+        });
+      }
+    }
+
+    function onMisalignmentSlider(el) {
+      const val = parseFloat(el.value);
+      document.getElementById('val_layer_misalignment_px').textContent = val.toFixed(1);
+      const svgEl = stage.querySelector('svg');
+      if (svgEl) {
+        const groups = svgEl.querySelectorAll('g[data-layer-index]');
+        const numLayers = Math.max(parseInt(document.getElementById('p_num_tonal_layers').value, 10) || 1, 1);
+        let unitScale = getRenderResScale();
+        if (state.mode === 'plotter') {
+          const vb = svgEl.viewBox && svgEl.viewBox.baseVal;
+          const wMm = (vb && vb.width) ? vb.width : 210.0;
+          const wPx = (state.lastResult && state.lastResult.render_width) ? state.lastResult.render_width : 480.0;
+          unitScale = unitScale * (wMm / Math.max(wPx, 1.0));
+        }
+        groups.forEach(g => {
+          const idx = parseInt(g.getAttribute('data-layer-index') || '0', 10);
+          if (val <= 0.05) {
+            g.removeAttribute('transform');
+          } else {
+            const angle = idx * 2.39996323;
+            const mag = (val * unitScale) * ((idx + 1) / numLayers);
+            const dx = (mag * Math.cos(angle)).toFixed(2);
+            const dy = (mag * Math.sin(angle)).toFixed(2);
+            g.setAttribute('transform', `translate(${dx}, ${dy})`);
+          }
+        });
+      }
+    }
+
+    function applyPreset(presetName) {
+      const defaultCreative = {
+        nib_flatness: 0.00,
+        nib_angle_deg: 35,
+        taper_power: 1.00,
+        radius_gamma: 1.00,
+        polygon_decimation: 0.00,
+        spine_wave_amplitude: 0.0,
+        spine_wave_frequency: 2.0,
+        bristle_splay: 0.14,
+        stroke_extension_px: 0.0,
+        flow_lock_strength: 0.00,
+        flow_lock_angle_deg: 45,
+        blend_mode: 'normal',
+        stroke_outline_mode: 'filled',
+        stroke_outline_width: 1.2,
+        stroke_hue_jitter: 0.00,
+        turbulence_scale: 1.0,
+        layer_misalignment_px: 0.0,
+      };
+
+      const presets = {
+        sumie: {
+          color_palette_mode: 'auto_palette',
+          custom_colors: [],
+          match_source_paper_tone: true,
+          fallback_paper_hex: '#f4f1ea',
+          num_tonal_layers: 7, min_density_threshold: 0.10, max_density_threshold: 0.84,
+          op_min: 0.28, op_max: 0.94, stroke_width_scale: 1.12, bristle_count: 5,
+          dry_brush_strength: 0.65, paper_grain_strength: 0.22, anisotropic_sigma: 1.2,
+          spur_prune_factor: 1.25, min_stroke_length_px: 6.0, max_deflection_deg: 65,
+          spline_smoothing_factor: 0.40
+        },
+        charcoal: {
+          color_palette_mode: 'monochrome',
+          custom_colors: [],
+          match_source_paper_tone: false,
+          fallback_paper_hex: '#f2ece1',
+          num_tonal_layers: 6, min_density_threshold: 0.16, max_density_threshold: 0.86,
+          op_min: 0.38, op_max: 0.96, stroke_width_scale: 1.32, bristle_count: 9,
+          dry_brush_strength: 0.88, paper_grain_strength: 0.44, anisotropic_sigma: 1.5,
+          spur_prune_factor: 1.40, min_stroke_length_px: 8.0, max_deflection_deg: 65,
+          spline_smoothing_factor: 0.50
+        },
+        wash: {
+          color_palette_mode: 'auto_palette',
+          custom_colors: [],
+          match_source_paper_tone: true,
+          fallback_paper_hex: '#f8f6f0',
+          num_tonal_layers: 9, min_density_threshold: 0.06, max_density_threshold: 0.78,
+          op_min: 0.16, op_max: 0.82, stroke_width_scale: 1.48, bristle_count: 2,
+          dry_brush_strength: 0.30, paper_grain_strength: 0.20, anisotropic_sigma: 1.8,
+          spur_prune_factor: 1.20, min_stroke_length_px: 6.0, max_deflection_deg: 75,
+          spline_smoothing_factor: 0.75,
+          blend_mode: 'multiply', turbulence_scale: 1.8
+        },
+        ink: {
+          color_palette_mode: 'monochrome',
+          custom_colors: [],
+          match_source_paper_tone: false,
+          fallback_paper_hex: '#faf8f5',
+          num_tonal_layers: 4, min_density_threshold: 0.34, max_density_threshold: 0.88,
+          op_min: 0.68, op_max: 0.98, stroke_width_scale: 1.05, bristle_count: 6,
+          dry_brush_strength: 0.75, paper_grain_strength: 0.10, anisotropic_sigma: 1.4,
+          spur_prune_factor: 1.50, min_stroke_length_px: 10.0, max_deflection_deg: 60,
+          spline_smoothing_factor: 0.45,
+          taper_power: 1.50
+        },
+        ukiyoe: {
+          color_palette_mode: 'auto_palette',
+          custom_colors: ['#d9b48f', '#c85a32', '#487868', '#1d4e68', '#16191e'],
+          match_source_paper_tone: false,
+          fallback_paper_hex: '#efe6d5',
+          num_tonal_layers: 5, min_density_threshold: 0.12, max_density_threshold: 0.82,
+          op_min: 0.80, op_max: 0.96, stroke_width_scale: 1.25, bristle_count: 0,
+          dry_brush_strength: 0.15, paper_grain_strength: 0.34, anisotropic_sigma: 1.6,
+          spur_prune_factor: 1.45, min_stroke_length_px: 8.0, max_deflection_deg: 55,
+          spline_smoothing_factor: 0.55,
+          stroke_outline_mode: 'outlined', stroke_outline_width: 0.8, turbulence_scale: 0.2
+        },
+        cyber: {
+          color_palette_mode: 'auto_palette',
+          custom_colors: ['#3b0764', '#7e22ce', '#ec4899', '#06b6d4', '#bef264'],
+          match_source_paper_tone: false,
+          fallback_paper_hex: '#0b0d17',
+          num_tonal_layers: 5, min_density_threshold: 0.10, max_density_threshold: 0.85,
+          op_min: 0.48, op_max: 0.96, stroke_width_scale: 0.74, bristle_count: 10,
+          dry_brush_strength: 0.95, paper_grain_strength: 0.08, anisotropic_sigma: 1.4,
+          spur_prune_factor: 1.15, min_stroke_length_px: 5.0, max_deflection_deg: 80,
+          spline_smoothing_factor: 0.85,
+          blend_mode: 'screen', bristle_splay: 0.85
+        },
+        fauvist: {
+          color_palette_mode: 'auto_palette',
+          custom_colors: ['#f4a261', '#e76f51', '#2a9d8f', '#e63946', '#457b9d', '#1d3557'],
+          match_source_paper_tone: false,
+          fallback_paper_hex: '#fbf3e4',
+          num_tonal_layers: 6, min_density_threshold: 0.09, max_density_threshold: 0.84,
+          op_min: 0.62, op_max: 0.96, stroke_width_scale: 2.10, bristle_count: 4,
+          dry_brush_strength: 0.55, paper_grain_strength: 0.30, anisotropic_sigma: 2.3,
+          spur_prune_factor: 2.00, min_stroke_length_px: 14.0, max_deflection_deg: 70,
+          spline_smoothing_factor: 0.65,
+          nib_flatness: 0.45, nib_angle_deg: 25, stroke_hue_jitter: 0.20
+        },
+        ghost: {
+          color_palette_mode: 'auto_palette',
+          custom_colors: [],
+          match_source_paper_tone: true,
+          fallback_paper_hex: '#f4f1ea',
+          num_tonal_layers: 8, min_density_threshold: 0.08, max_density_threshold: 0.88,
+          op_min: 0.16, op_max: 0.76, stroke_width_scale: 0.44, bristle_count: 12,
+          dry_brush_strength: 1.00, paper_grain_strength: 0.26, anisotropic_sigma: 0.8,
+          spur_prune_factor: 1.05, min_stroke_length_px: 4.0, max_deflection_deg: 75,
+          spline_smoothing_factor: 0.60,
+          bristle_splay: 1.85, stroke_extension_px: 10.0
+        },
+        zen: {
+          color_palette_mode: 'monochrome',
+          custom_colors: ['#8c857b', '#3d3834', '#141210'],
+          match_source_paper_tone: false,
+          fallback_paper_hex: '#f5f0e6',
+          num_tonal_layers: 3, min_density_threshold: 0.24, max_density_threshold: 0.80,
+          op_min: 0.50, op_max: 0.96, stroke_width_scale: 1.85, bristle_count: 7,
+          dry_brush_strength: 0.85, paper_grain_strength: 0.28, anisotropic_sigma: 2.6,
+          spur_prune_factor: 2.60, min_stroke_length_px: 24.0, max_deflection_deg: 85,
+          spline_smoothing_factor: 1.25,
+          taper_power: 1.80
+        },
+        risograph: {
+          color_palette_mode: 'auto_palette',
+          custom_colors: ['#ffd166', '#ff477e', '#118ab2', '#073b4c'],
+          match_source_paper_tone: false,
+          fallback_paper_hex: '#f6f2ea',
+          num_tonal_layers: 4, min_density_threshold: 0.12, max_density_threshold: 0.80,
+          op_min: 0.52, op_max: 0.88, stroke_width_scale: 1.22, bristle_count: 3,
+          dry_brush_strength: 0.60, paper_grain_strength: 0.58, anisotropic_sigma: 1.3,
+          spur_prune_factor: 1.35, min_stroke_length_px: 7.0, max_deflection_deg: 60,
+          spline_smoothing_factor: 0.40,
+          blend_mode: 'multiply', layer_misalignment_px: 5.5
+        },
+        blueprint: {
+          color_palette_mode: 'auto_palette',
+          custom_colors: ['#1b4965', '#3d7ea6', '#62b6cb', '#bee9e8', '#f0f9ff'],
+          match_source_paper_tone: false,
+          fallback_paper_hex: '#0d253f',
+          num_tonal_layers: 5, min_density_threshold: 0.10, max_density_threshold: 0.86,
+          op_min: 0.45, op_max: 0.95, stroke_width_scale: 0.56, bristle_count: 4,
+          dry_brush_strength: 0.70, paper_grain_strength: 0.18, anisotropic_sigma: 0.9,
+          spur_prune_factor: 1.10, min_stroke_length_px: 5.0, max_deflection_deg: 55,
+          spline_smoothing_factor: 0.30,
+          stroke_extension_px: 8.0
+        },
+        cubist: {
+          color_palette_mode: 'auto_palette',
+          custom_colors: ['#d4a373', '#bc6c25', '#606c38', '#4a5759', '#22223b'],
+          match_source_paper_tone: false,
+          fallback_paper_hex: '#ede6db',
+          num_tonal_layers: 5, min_density_threshold: 0.14, max_density_threshold: 0.84,
+          op_min: 0.65, op_max: 0.94, stroke_width_scale: 1.55, bristle_count: 0,
+          dry_brush_strength: 0.10, paper_grain_strength: 0.32, anisotropic_sigma: 0.4,
+          spur_prune_factor: 0.65, min_stroke_length_px: 5.0, max_deflection_deg: 25,
+          spline_smoothing_factor: 0.00,
+          polygon_decimation: 0.75, taper_power: 0.00, turbulence_scale: 0.0
+        },
+        vangogh: {
+          color_palette_mode: 'auto_palette',
+          custom_colors: ['#f4d35e', '#ee964b', '#3dccc7', '#2541b2', '#1d2d44', '#0d1321'],
+          match_source_paper_tone: false,
+          fallback_paper_hex: '#fdf6e2',
+          num_tonal_layers: 6, min_density_threshold: 0.08, max_density_threshold: 0.84,
+          op_min: 0.58, op_max: 0.96, stroke_width_scale: 1.28, bristle_count: 6,
+          dry_brush_strength: 0.70, paper_grain_strength: 0.25, anisotropic_sigma: 1.6,
+          spur_prune_factor: 1.30, min_stroke_length_px: 6.0, max_deflection_deg: 75,
+          spline_smoothing_factor: 0.55,
+          spine_wave_amplitude: 6.5, spine_wave_frequency: 2.25, stroke_hue_jitter: 0.25
+        },
+        topo: {
+          color_palette_mode: 'auto_palette',
+          custom_colors: ['#00f5d4', '#00bbf9', '#fee440', '#f15bb5', '#9b5de5'],
+          match_source_paper_tone: false,
+          fallback_paper_hex: '#090b10',
+          num_tonal_layers: 5, min_density_threshold: 0.10, max_density_threshold: 0.84,
+          op_min: 0.65, op_max: 0.98, stroke_width_scale: 0.95, bristle_count: 0,
+          dry_brush_strength: 0.10, paper_grain_strength: 0.05, anisotropic_sigma: 1.5,
+          spur_prune_factor: 1.40, min_stroke_length_px: 8.0, max_deflection_deg: 75,
+          spline_smoothing_factor: 0.65,
+          stroke_outline_mode: 'hollow', stroke_outline_width: 1.4, radius_gamma: 0.00,
+          blend_mode: 'screen', turbulence_scale: 0.0
+        },
+        marble: {
+          color_palette_mode: 'auto_palette',
+          custom_colors: ['#ff9f1c', '#ffbf69', '#2ec4b6', '#e71d36', '#011627'],
+          match_source_paper_tone: false,
+          fallback_paper_hex: '#12131a',
+          num_tonal_layers: 5, min_density_threshold: 0.08, max_density_threshold: 0.82,
+          op_min: 0.55, op_max: 0.94, stroke_width_scale: 1.65, bristle_count: 4,
+          dry_brush_strength: 0.80, paper_grain_strength: 0.18, anisotropic_sigma: 1.8,
+          spur_prune_factor: 1.30, min_stroke_length_px: 6.0, max_deflection_deg: 70,
+          spline_smoothing_factor: 0.70,
+          turbulence_scale: 6.8, blend_mode: 'difference', stroke_hue_jitter: 0.30
+        },
+        chisel: {
+          color_palette_mode: 'monochrome',
+          custom_colors: ['#9e8c7a', '#524336', '#261c15', '#0d0907'],
+          match_source_paper_tone: false,
+          fallback_paper_hex: '#f5efe4',
+          num_tonal_layers: 4, min_density_threshold: 0.16, max_density_threshold: 0.85,
+          op_min: 0.60, op_max: 0.98, stroke_width_scale: 1.40, bristle_count: 4,
+          dry_brush_strength: 0.55, paper_grain_strength: 0.30, anisotropic_sigma: 1.1,
+          spur_prune_factor: 1.25, min_stroke_length_px: 7.0, max_deflection_deg: 60,
+          spline_smoothing_factor: 0.35,
+          nib_flatness: 0.85, nib_angle_deg: 38, taper_power: 2.40, stroke_extension_px: 12.0
+        },
+        bauhaus: {
+          color_palette_mode: 'auto_palette',
+          custom_colors: ['#f4b942', '#d9381e', '#18202c'],
+          match_source_paper_tone: false,
+          fallback_paper_hex: '#f4f1ea',
+          num_tonal_layers: 3, min_density_threshold: 0.16, max_density_threshold: 0.78,
+          op_min: 0.85, op_max: 0.98, stroke_width_scale: 1.60, bristle_count: 0,
+          dry_brush_strength: 0.05, paper_grain_strength: 0.24, anisotropic_sigma: 1.5,
+          spur_prune_factor: 1.80, min_stroke_length_px: 12.0, max_deflection_deg: 45,
+          spline_smoothing_factor: 0.30,
+          nib_flatness: 0.65, nib_angle_deg: 45, taper_power: 0.00, stroke_extension_px: 6.0,
+          turbulence_scale: 0.0
+        },
+        linocut: {
+          color_palette_mode: 'monochrome',
+          custom_colors: ['#b55239', '#141311'],
+          match_source_paper_tone: false,
+          fallback_paper_hex: '#f3ede0',
+          num_tonal_layers: 2, min_density_threshold: 0.26, max_density_threshold: 0.66,
+          op_min: 0.88, op_max: 0.98, stroke_width_scale: 1.45, bristle_count: 0,
+          dry_brush_strength: 0.25, paper_grain_strength: 0.36, anisotropic_sigma: 1.3,
+          spur_prune_factor: 1.65, min_stroke_length_px: 9.0, max_deflection_deg: 50,
+          spline_smoothing_factor: 0.25,
+          polygon_decimation: 0.35, taper_power: 1.60, radius_gamma: 1.35, turbulence_scale: 0.4
+        },
+        chalkboard: {
+          color_palette_mode: 'monochrome',
+          custom_colors: ['#6b8cae', '#f8fafc'],
+          match_source_paper_tone: false,
+          fallback_paper_hex: '#181c20',
+          num_tonal_layers: 2, min_density_threshold: 0.22, max_density_threshold: 0.68,
+          op_min: 0.55, op_max: 0.94, stroke_width_scale: 1.25, bristle_count: 8,
+          dry_brush_strength: 0.92, paper_grain_strength: 0.52, anisotropic_sigma: 1.4,
+          spur_prune_factor: 1.45, min_stroke_length_px: 8.0, max_deflection_deg: 65,
+          spline_smoothing_factor: 0.55
+        },
+        engraving: {
+          color_palette_mode: 'monochrome',
+          custom_colors: ['#8a7968', '#473c33', '#15110e'],
+          match_source_paper_tone: false,
+          fallback_paper_hex: '#f6f1e7',
+          num_tonal_layers: 3, min_density_threshold: 0.18, max_density_threshold: 0.78,
+          op_min: 0.65, op_max: 0.96, stroke_width_scale: 0.58, bristle_count: 2,
+          dry_brush_strength: 0.40, paper_grain_strength: 0.22, anisotropic_sigma: 1.4,
+          spur_prune_factor: 1.30, min_stroke_length_px: 6.0, max_deflection_deg: 65,
+          spline_smoothing_factor: 0.35,
+          flow_lock_strength: 0.65, flow_lock_angle_deg: 35,
+          spine_wave_amplitude: 1.2, spine_wave_frequency: 10.0, turbulence_scale: 0.2
+        },
+        duotone: {
+          color_palette_mode: 'auto_palette',
+          custom_colors: ['#ff4d4d', '#1e2761'],
+          match_source_paper_tone: false,
+          fallback_paper_hex: '#faf6ee',
+          num_tonal_layers: 2, min_density_threshold: 0.20, max_density_threshold: 0.64,
+          op_min: 0.68, op_max: 0.92, stroke_width_scale: 1.35, bristle_count: 3,
+          dry_brush_strength: 0.50, paper_grain_strength: 0.40, anisotropic_sigma: 1.5,
+          spur_prune_factor: 1.50, min_stroke_length_px: 8.0, max_deflection_deg: 65,
+          spline_smoothing_factor: 0.50,
+          blend_mode: 'multiply', layer_misalignment_px: 3.0
+        },
+        pastel: {
+          color_palette_mode: 'auto_palette',
+          custom_colors: ['#f7b267', '#f4845f', '#9b72aa', '#3c2a4d'],
+          match_source_paper_tone: false,
+          fallback_paper_hex: '#f9f3eb',
+          num_tonal_layers: 4, min_density_threshold: 0.12, max_density_threshold: 0.80,
+          op_min: 0.50, op_max: 0.92, stroke_width_scale: 1.55, bristle_count: 7,
+          dry_brush_strength: 0.78, paper_grain_strength: 0.42, anisotropic_sigma: 1.6,
+          spur_prune_factor: 1.35, min_stroke_length_px: 7.0, max_deflection_deg: 70,
+          spline_smoothing_factor: 0.60,
+          stroke_hue_jitter: 0.15
+        },
+        sanguine: {
+          color_palette_mode: 'monochrome',
+          custom_colors: ['#c86d51', '#8c3823', '#2b1812'],
+          match_source_paper_tone: false,
+          fallback_paper_hex: '#f4e8d6',
+          num_tonal_layers: 3, min_density_threshold: 0.18, max_density_threshold: 0.80,
+          op_min: 0.52, op_max: 0.96, stroke_width_scale: 1.24, bristle_count: 6,
+          dry_brush_strength: 0.75, paper_grain_strength: 0.35, anisotropic_sigma: 1.4,
+          spur_prune_factor: 1.45, min_stroke_length_px: 8.0, max_deflection_deg: 65,
+          spline_smoothing_factor: 0.55,
+          taper_power: 1.40
+        },
+        sumie_duo: {
+          color_palette_mode: 'monochrome',
+          custom_colors: ['#7a7d82', '#111215'],
+          match_source_paper_tone: false,
+          fallback_paper_hex: '#f7f5f0',
+          num_tonal_layers: 2, min_density_threshold: 0.25, max_density_threshold: 0.72,
+          op_min: 0.45, op_max: 0.96, stroke_width_scale: 1.70, bristle_count: 6,
+          dry_brush_strength: 0.82, paper_grain_strength: 0.25, anisotropic_sigma: 2.2,
+          spur_prune_factor: 2.10, min_stroke_length_px: 14.0, max_deflection_deg: 80,
+          spline_smoothing_factor: 0.95,
+          taper_power: 1.70
+        }
+      };
+      const rawPreset = presets[presetName];
+      if (!rawPreset) return;
+      const p = { ...defaultCreative, ...rawPreset };
+
+      const presetSel = document.getElementById('presetSelect');
+      const presetRow = document.getElementById('presetSelectRow');
+      if (presetSel) {
+        presetSel.value = presetName;
+        const selectedOpt = presetSel.options[presetSel.selectedIndex];
+        if (presetRow && selectedOpt) {
+          const tip = selectedOpt.getAttribute('data-tooltip');
+          if (tip) presetRow.setAttribute('data-tooltip', tip);
+        }
+      }
+
+      if (p.color_palette_mode) {
+        document.getElementById('p_color_palette_mode').value = p.color_palette_mode;
+      }
+      state.customLayerColors = Array.isArray(p.custom_colors) ? [...p.custom_colors] : [];
+      state.customLayerBlurs = [];
+      state.layerUiOverrides = {};
+
+      if (p.match_source_paper_tone !== undefined) {
+        document.getElementById('p_match_source_paper_tone').checked = p.match_source_paper_tone;
+      }
+      if (p.fallback_paper_hex) {
+        document.getElementById('p_fallback_paper_hex').value = p.fallback_paper_hex;
+      }
+
+      for (const [k, v] of Object.entries(p)) {
+        if (['color_palette_mode', 'custom_colors', 'match_source_paper_tone', 'fallback_paper_hex'].includes(k)) {
+          continue;
+        }
+        const input = document.getElementById(`p_${k}`);
+        const label = document.getElementById(`val_${k}`);
+        if (input) input.value = v;
+        if (label) label.textContent = v;
+      }
+      triggerRender(getPreferredResolution());
+    }
+
+    function collectParams() {
+      const numLayers = parseInt(document.getElementById('p_num_tonal_layers').value, 10);
+      const hasCustomColors = state.customLayerColors.some(c => c !== null && c !== undefined);
+      const hasCustomBlurs = state.customLayerBlurs.some(b => b !== null && b !== undefined);
+      const sharedParams = {
+        color_palette_mode: document.getElementById('p_color_palette_mode').value,
+        layer_colors: hasCustomColors ? state.customLayerColors.slice(0, numLayers) : null,
+        layer_blurs: hasCustomBlurs ? state.customLayerBlurs.slice(0, numLayers) : null,
+        num_tonal_layers: numLayers,
+        min_density_threshold: parseFloat(document.getElementById('p_min_density_threshold').value),
+        max_density_threshold: parseFloat(document.getElementById('p_max_density_threshold').value),
+        layer_opacity_range: [
+          parseFloat(document.getElementById('p_op_min').value),
+          parseFloat(document.getElementById('p_op_max').value),
+        ],
+        stroke_width_scale: parseFloat(document.getElementById('p_stroke_width_scale').value),
+        bristle_count: parseInt(document.getElementById('p_bristle_count').value, 10),
+        dry_brush_strength: parseFloat(document.getElementById('p_dry_brush_strength').value),
+        paper_grain_strength: parseFloat(document.getElementById('p_paper_grain_strength').value),
+        anisotropic_sigma: parseFloat(document.getElementById('p_anisotropic_sigma').value),
+        spur_prune_factor: parseFloat(document.getElementById('p_spur_prune_factor').value),
+        min_stroke_length_px: parseFloat(document.getElementById('p_min_stroke_length_px').value),
+        max_deflection_deg: parseFloat(document.getElementById('p_max_deflection_deg').value),
+        spline_smoothing_factor: parseFloat(document.getElementById('p_spline_smoothing_factor').value),
+        match_source_paper_tone: document.getElementById('p_match_source_paper_tone').checked,
+        fallback_paper_hex: document.getElementById('p_fallback_paper_hex').value,
+        normalize_paper_illumination: document.getElementById('p_normalize_paper_illumination').checked,
+        nib_flatness: parseFloat(document.getElementById('p_nib_flatness').value),
+        nib_angle_deg: parseFloat(document.getElementById('p_nib_angle_deg').value),
+        taper_power: parseFloat(document.getElementById('p_taper_power').value),
+        radius_gamma: parseFloat(document.getElementById('p_radius_gamma').value),
+        polygon_decimation: parseFloat(document.getElementById('p_polygon_decimation').value),
+        spine_wave_amplitude: parseFloat(document.getElementById('p_spine_wave_amplitude').value),
+        spine_wave_frequency: parseFloat(document.getElementById('p_spine_wave_frequency').value),
+        bristle_splay: parseFloat(document.getElementById('p_bristle_splay').value),
+        stroke_extension_px: parseFloat(document.getElementById('p_stroke_extension_px').value),
+        flow_lock_strength: parseFloat(document.getElementById('p_flow_lock_strength').value),
+        flow_lock_angle_deg: parseFloat(document.getElementById('p_flow_lock_angle_deg').value),
+        blend_mode: document.getElementById('p_blend_mode').value,
+        stroke_outline_mode: document.getElementById('p_stroke_outline_mode').value,
+        stroke_outline_width: parseFloat(document.getElementById('p_stroke_outline_width').value),
+        stroke_hue_jitter: parseFloat(document.getElementById('p_stroke_hue_jitter').value),
+        turbulence_scale: parseFloat(document.getElementById('p_turbulence_scale').value),
+        layer_misalignment_px: parseFloat(document.getElementById('p_layer_misalignment_px').value),
+      };
+      if (state.mode === 'painterly') {
+        return sharedParams;
+      } else {
+        return {
+          ...sharedParams,
+          plotter_display_mode: state.plotterDisplayMode || 'overlay',
+          width_mm: parseFloat(document.getElementById('c_width_mm').value),
+          height_mm: parseFloat(document.getElementById('c_height_mm').value),
+          brush_max_radius_mm: parseFloat(document.getElementById('c_brush_max_radius_mm').value),
+          brush_drag_coeff: parseFloat(document.getElementById('c_brush_drag_coeff').value),
+          wash_Stepover_factor: parseFloat(document.getElementById('c_wash_Stepover_factor').value),
+        };
+      }
+    }
+
+    function collectSettingsPayload() {
+      const leftNav = {
+        mode: state.mode,
+        plotter_display_mode: state.plotterDisplayMode || 'overlay',
+        preset: document.getElementById('presetSelect') ? document.getElementById('presetSelect').value : 'sumie',
+        // Plotter physical calibration
+        width_mm: parseFloat(document.getElementById('c_width_mm').value),
+        height_mm: parseFloat(document.getElementById('c_height_mm').value),
+        brush_max_radius_mm: parseFloat(document.getElementById('c_brush_max_radius_mm').value),
+        wash_Stepover_factor: parseFloat(document.getElementById('c_wash_Stepover_factor').value),
+        brush_drag_coeff: parseFloat(document.getElementById('c_brush_drag_coeff').value),
+        // Section 1: Color Palette & Layer Decomposition
+        color_palette_mode: document.getElementById('p_color_palette_mode').value,
+        num_tonal_layers: parseInt(document.getElementById('p_num_tonal_layers').value, 10),
+        min_density_threshold: parseFloat(document.getElementById('p_min_density_threshold').value),
+        max_density_threshold: parseFloat(document.getElementById('p_max_density_threshold').value),
+        op_min: parseFloat(document.getElementById('p_op_min').value),
+        op_max: parseFloat(document.getElementById('p_op_max').value),
+        // Section 2: Variable Width & Dry-Brush Bristles
+        stroke_width_scale: parseFloat(document.getElementById('p_stroke_width_scale').value),
+        bristle_count: parseInt(document.getElementById('p_bristle_count').value, 10),
+        dry_brush_strength: parseFloat(document.getElementById('p_dry_brush_strength').value),
+        // Section 3: Topology & Spline Smoothing
+        anisotropic_sigma: parseFloat(document.getElementById('p_anisotropic_sigma').value),
+        spur_prune_factor: parseFloat(document.getElementById('p_spur_prune_factor').value),
+        min_stroke_length_px: parseFloat(document.getElementById('p_min_stroke_length_px').value),
+        max_deflection_deg: parseFloat(document.getElementById('p_max_deflection_deg').value),
+        spline_smoothing_factor: parseFloat(document.getElementById('p_spline_smoothing_factor').value),
+        // Section 4: Canvas & Paper Grain
+        paper_grain_strength: parseFloat(document.getElementById('p_paper_grain_strength').value),
+        match_source_paper_tone: document.getElementById('p_match_source_paper_tone').checked,
+        fallback_paper_hex: document.getElementById('p_fallback_paper_hex').value,
+        normalize_paper_illumination: document.getElementById('p_normalize_paper_illumination').checked,
+        // Section 5: Brush Shape & Geometry Mutations
+        nib_flatness: parseFloat(document.getElementById('p_nib_flatness').value),
+        nib_angle_deg: parseFloat(document.getElementById('p_nib_angle_deg').value),
+        taper_power: parseFloat(document.getElementById('p_taper_power').value),
+        radius_gamma: parseFloat(document.getElementById('p_radius_gamma').value),
+        polygon_decimation: parseFloat(document.getElementById('p_polygon_decimation').value),
+        // Section 6: Spine Distortion & Flow Chaos
+        spine_wave_amplitude: parseFloat(document.getElementById('p_spine_wave_amplitude').value),
+        spine_wave_frequency: parseFloat(document.getElementById('p_spine_wave_frequency').value),
+        bristle_splay: parseFloat(document.getElementById('p_bristle_splay').value),
+        stroke_extension_px: parseFloat(document.getElementById('p_stroke_extension_px').value),
+        flow_lock_strength: parseFloat(document.getElementById('p_flow_lock_strength').value),
+        flow_lock_angle_deg: parseFloat(document.getElementById('p_flow_lock_angle_deg').value),
+        // Section 7: Optical, Blending & Print Effects
+        blend_mode: document.getElementById('p_blend_mode').value,
+        stroke_outline_mode: document.getElementById('p_stroke_outline_mode').value,
+        stroke_outline_width: parseFloat(document.getElementById('p_stroke_outline_width').value),
+        stroke_hue_jitter: parseFloat(document.getElementById('p_stroke_hue_jitter').value),
+        turbulence_scale: parseFloat(document.getElementById('p_turbulence_scale').value),
+        layer_misalignment_px: parseFloat(document.getElementById('p_layer_misalignment_px').value),
+      };
+
+      const layersState = [];
+      if (state.lastResult && Array.isArray(state.lastResult.layers)) {
+        for (const layer of state.lastResult.layers) {
+          const card = document.querySelector(`.layer-card[data-dom-id="${CSS.escape(layer.dom_id)}"]`);
+          const swatch = document.getElementById(`swatch_${layer.dom_id}`);
+          const blurInput = document.getElementById(`blur_in_${layer.dom_id}`);
+          const opInput = card ? card.querySelector('input[title="Live SVG Layer Opacity"]') : null;
+          const visBtn = card ? card.querySelector('.layer-header .icon-btn') : null;
+
+          const colorHex = (swatch && swatch.tagName === 'INPUT') ? swatch.value : layer.color_hex;
+          const opacity = opInput ? parseFloat(opInput.value) : 1.0;
+          const blur = blurInput ? parseFloat(blurInput.value) : (layer.blur !== undefined ? Number(layer.blur) : 0.0);
+          const visible = visBtn ? !visBtn.classList.contains('muted') : true;
+
+          layersState.push({
+            dom_id: layer.dom_id,
+            name: layer.name,
+            layer_index: layer.layer_index,
+            color_hex: colorHex,
+            auto_color_hex: layer.auto_color_hex || colorHex,
+            opacity: opacity,
+            blur: blur,
+            visible: visible,
+          });
+        }
+      }
+
+      const paperLayer = layersState.find(l => l.layer_index === -1);
+      const rightNav = {
+        paper_hex: paperLayer ? paperLayer.color_hex : (state.lastResult ? state.lastResult.paper_hex : leftNav.fallback_paper_hex),
+        custom_layer_colors: [...state.customLayerColors],
+        custom_layer_blurs: [...state.customLayerBlurs],
+        layers: layersState,
+      };
+
+      return {
+        schema: 'brush_vectorizer_settings_v1',
+        exported_at: new Date().toISOString(),
+        left_nav: leftNav,
+        right_nav: rightNav,
+      };
+    }
+
+    function exportSettingsJson() {
+      try {
+        const payload = collectSettingsPayload();
+        const jsonText = JSON.stringify(payload, null, 2);
+        const blob = new Blob([jsonText], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const presetTag = payload.left_nav.preset || 'custom';
+        a.download = `brush_settings_${payload.left_nav.mode}_${presetTag}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        setStatus(false, `Exported settings (${a.download})`);
+      } catch (err) {
+        setStatus(false, `Settings export failed: ${err.message}`);
+      }
+    }
+
+    function applySettingsPayload(payload) {
+      if (!payload || typeof payload !== 'object') {
+        throw new Error('Invalid settings JSON object');
+      }
+      const left = (payload.left_nav && typeof payload.left_nav === 'object') ? payload.left_nav : payload;
+      const right = (payload.right_nav && typeof payload.right_nav === 'object') ? payload.right_nav : {};
+
+      // 1. Mode & Plotter Viewport Display Mode
+      if (left.mode === 'painterly' || left.mode === 'plotter') {
+        state.mode = left.mode;
+        document.querySelectorAll('#modeSegmented button').forEach(b => {
+          b.classList.toggle('active', b.dataset.mode === state.mode);
+        });
+        const plotterPanel = document.getElementById('plotterControls');
+        if (plotterPanel) {
+          const isPlotter = (state.mode === 'plotter');
+          plotterPanel.classList.toggle('hidden', !isPlotter);
+          plotterPanel.style.display = isPlotter ? 'block' : 'none';
+        }
+      }
+      if (left.plotter_display_mode) {
+        state.plotterDisplayMode = left.plotter_display_mode;
+        document.querySelectorAll('#plotterDisplaySegmented button').forEach(b => {
+          b.classList.toggle('active', b.dataset.pview === state.plotterDisplayMode);
+        });
+      }
+
+      // 2. Preset selector
+      if (left.preset) {
+        const presetSel = document.getElementById('presetSelect');
+        const presetRow = document.getElementById('presetSelectRow');
+        if (presetSel && Array.from(presetSel.options).some(opt => opt.value === left.preset)) {
+          presetSel.value = left.preset;
+          const selectedOpt = presetSel.options[presetSel.selectedIndex];
+          if (presetRow && selectedOpt) {
+            const tip = selectedOpt.getAttribute('data-tooltip');
+            if (tip) presetRow.setAttribute('data-tooltip', tip);
+          }
+        }
+      }
+
+      // Support raw PainterlyConfig layer_opacity_range tuple if present
+      const normalizedLeft = { ...left };
+      if (Array.isArray(normalizedLeft.layer_opacity_range) && normalizedLeft.layer_opacity_range.length >= 2) {
+        if (normalizedLeft.op_min === undefined) normalizedLeft.op_min = normalizedLeft.layer_opacity_range[0];
+        if (normalizedLeft.op_max === undefined) normalizedLeft.op_max = normalizedLeft.layer_opacity_range[1];
+      }
+
+      // 3. Plotter Calibration Sliders (c_*)
+      const plotterKeys = [
+        'width_mm',
+        'height_mm',
+        'brush_max_radius_mm',
+        'wash_Stepover_factor',
+        'brush_drag_coeff',
+      ];
+      for (const ck of plotterKeys) {
+        if (normalizedLeft[ck] !== undefined) {
+          const input = document.getElementById(`c_${ck}`);
+          const label = document.getElementById(`val_c_${ck}`);
+          if (input) input.value = normalizedLeft[ck];
+          if (label) label.textContent = normalizedLeft[ck];
+        }
+      }
+
+      // 4. Shared & Painterly Controls (p_*)
+      if (normalizedLeft.color_palette_mode) {
+        const pm = document.getElementById('p_color_palette_mode');
+        if (pm) pm.value = normalizedLeft.color_palette_mode;
+      }
+      if (normalizedLeft.blend_mode) {
+        const bm = document.getElementById('p_blend_mode');
+        if (bm) bm.value = normalizedLeft.blend_mode;
+      }
+      if (normalizedLeft.stroke_outline_mode) {
+        const som = document.getElementById('p_stroke_outline_mode');
+        if (som) som.value = normalizedLeft.stroke_outline_mode;
+      }
+      if (normalizedLeft.match_source_paper_tone !== undefined) {
+        document.getElementById('p_match_source_paper_tone').checked = Boolean(normalizedLeft.match_source_paper_tone);
+      }
+      if (normalizedLeft.normalize_paper_illumination !== undefined) {
+        document.getElementById('p_normalize_paper_illumination').checked = Boolean(normalizedLeft.normalize_paper_illumination);
+      }
+      if (normalizedLeft.fallback_paper_hex) {
+        document.getElementById('p_fallback_paper_hex').value = normalizedLeft.fallback_paper_hex;
+      }
+
+      const sliderKeys = [
+        'num_tonal_layers',
+        'min_density_threshold',
+        'max_density_threshold',
+        'op_min',
+        'op_max',
+        'stroke_width_scale',
+        'bristle_count',
+        'dry_brush_strength',
+        'anisotropic_sigma',
+        'spur_prune_factor',
+        'min_stroke_length_px',
+        'max_deflection_deg',
+        'spline_smoothing_factor',
+        'paper_grain_strength',
+        'nib_flatness',
+        'nib_angle_deg',
+        'taper_power',
+        'radius_gamma',
+        'polygon_decimation',
+        'spine_wave_amplitude',
+        'spine_wave_frequency',
+        'bristle_splay',
+        'stroke_extension_px',
+        'flow_lock_strength',
+        'flow_lock_angle_deg',
+        'stroke_outline_width',
+        'stroke_hue_jitter',
+        'turbulence_scale',
+        'layer_misalignment_px',
+      ];
+      for (const sk of sliderKeys) {
+        if (normalizedLeft[sk] !== undefined) {
+          const input = document.getElementById(`p_${sk}`);
+          const label = document.getElementById(`val_${sk}`);
+          if (input) input.value = normalizedLeft[sk];
+          if (label) label.textContent = normalizedLeft[sk];
+        }
+      }
+
+      // 5. Right-Nav Layer Colors, Blurs, Opacity, and Visibility
+      const numLayers = parseInt(document.getElementById('p_num_tonal_layers').value, 10) || 7;
+      state.customLayerColors = [];
+      state.customLayerBlurs = [];
+      state.layerUiOverrides = {};
+
+      if (Array.isArray(right.custom_layer_colors) && right.custom_layer_colors.length > 0) {
+        state.customLayerColors = [...right.custom_layer_colors];
+      } else if (Array.isArray(normalizedLeft.layer_colors) && normalizedLeft.layer_colors.length > 0) {
+        state.customLayerColors = [...normalizedLeft.layer_colors];
+      }
+
+      if (Array.isArray(right.custom_layer_blurs) && right.custom_layer_blurs.length > 0) {
+        state.customLayerBlurs = [...right.custom_layer_blurs];
+      } else if (Array.isArray(normalizedLeft.layer_blurs) && normalizedLeft.layer_blurs.length > 0) {
+        state.customLayerBlurs = [...normalizedLeft.layer_blurs];
+      }
+
+      if (Array.isArray(right.layers)) {
+        for (const l of right.layers) {
+          if (l.layer_index === undefined) continue;
+          const idx = Number(l.layer_index);
+          if (idx === -1 && l.color_hex) {
+            if (!document.getElementById('p_match_source_paper_tone').checked || (l.auto_color_hex && l.color_hex.toLowerCase() !== l.auto_color_hex.toLowerCase())) {
+              document.getElementById('p_match_source_paper_tone').checked = false;
+              document.getElementById('p_fallback_paper_hex').value = l.color_hex;
+            }
+          } else if (idx >= 0 && idx < numLayers) {
+            if (l.color_hex) {
+              while (state.customLayerColors.length <= idx) state.customLayerColors.push(null);
+              state.customLayerColors[idx] = l.color_hex;
+            }
+            if (l.blur !== undefined && l.blur !== null) {
+              while (state.customLayerBlurs.length <= idx) state.customLayerBlurs.push(null);
+              state.customLayerBlurs[idx] = Number(l.blur);
+            }
+          }
+          state.layerUiOverrides[idx] = {
+            opacity: (l.opacity !== undefined) ? Number(l.opacity) : undefined,
+            visible: (l.visible !== undefined) ? Boolean(l.visible) : undefined,
+            color_hex: l.color_hex,
+            blur: (l.blur !== undefined) ? Number(l.blur) : undefined,
+          };
+        }
+      } else if (right.paper_hex && !document.getElementById('p_match_source_paper_tone').checked) {
+        document.getElementById('p_fallback_paper_hex').value = right.paper_hex;
+      }
+
+      triggerRender(getPreferredResolution());
+    }
+
+    async function importSettingsJson(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        applySettingsPayload(parsed);
+        setStatus(false, `Imported settings from ${file.name}`);
+      } catch (err) {
+        setStatus(false, `Settings import failed: ${err.message}`);
+      } finally {
+        event.target.value = '';
+      }
+    }
+
+    function applyRightNavOverridesToDom() {
+      if (!state.lastResult || !Array.isArray(state.lastResult.layers)) return;
+      const svgEl = stage.querySelector('svg');
+      const acrylicOnly = (state.mode === 'plotter' && state.plotterDisplayMode === 'acrylic');
+
+      for (const layer of state.lastResult.layers) {
+        const ov = state.layerUiOverrides[layer.layer_index];
+        if (!ov) continue;
+        const card = document.querySelector(`.layer-card[data-dom-id="${CSS.escape(layer.dom_id)}"]`);
+        if (ov.opacity !== undefined && !isNaN(ov.opacity)) {
+          const opInput = card ? card.querySelector('input[title="Live SVG Layer Opacity"]') : null;
+          if (opInput) opInput.value = ov.opacity;
+          setLayerDomOpacity(layer.dom_id, ov.opacity, `op_val_${layer.dom_id}`);
+        }
+        if (ov.visible !== undefined) {
+          const visBtn = card ? card.querySelector('.layer-header .icon-btn') : null;
+          if (visBtn) visBtn.classList.toggle('muted', !ov.visible);
+          if (svgEl) {
+            const g = svgEl.querySelector(`#${CSS.escape(layer.dom_id)}`);
+            const previewSub = svgEl.querySelector(`g[data-preview-for="${CSS.escape(layer.dom_id)}"]`);
+            if (g) {
+              if (acrylicOnly && previewSub) {
+                g.style.display = 'none';
+              } else {
+                g.style.display = ov.visible ? '' : 'none';
+              }
+            }
+            if (previewSub) {
+              previewSub.style.display = ov.visible ? '' : 'none';
+            }
+          }
+        }
+      }
+    }
+
+    function scheduleRender() {
+      if (state.debounceTimer) clearTimeout(state.debounceTimer);
+      state.debounceTimer = setTimeout(() => {
+        triggerRender(getPreferredResolution());
+      }, 180);
+    }
+
+    function handleRenderResponse(reqId, data) {
+      if (reqId !== state.activeRequestId) return; // Superseded by newer slider move
+      if (!data || data.error) {
+        setStatus(false, `Error: ${data ? data.error : 'Unknown error'}`);
+        return;
+      }
+
+      const firstLoad = !state.lastResult || state.lastResult.imageId !== state.imageId;
+      state.lastResult = { ...data, imageId: state.imageId };
+
+      updateStatsAndLayers(data);
+      renderViewportContent();
+      applyRightNavOverridesToDom();
+      if (firstLoad) fitStageToViewport();
+
+      setStatus(
+        false,
+        `${data.resolution === 'full' ? 'Full-Res' : 'Preview'} (${data.render_width}×${data.render_height}) in ${data.elapsed_ms} ms`
+      );
+    }
+
+    function triggerRender(resolution = 'preview') {
+      const reqId = ++state.activeRequestId;
+      setStatus(true, resolution === 'full' ? 'Rendering Full Resolution...' : 'Updating Preview...');
+
+      const payload = {
+        image_id: state.imageId,
+        mode: state.mode,
+        resolution: resolution,
+        params: collectParams(),
+      };
+      getPyWorker().postMessage({ type: 'render', reqId, payload });
+    }
+
+    function setStatus(busy, text) {
+      const pill = document.getElementById('statusPill');
+      pill.classList.toggle('busy', busy);
+      document.getElementById('statusText').textContent = text;
+    }
+
+    function updateStatsAndLayers(data) {
+      document.getElementById('statStrokes').textContent = data.total_strokes.toLocaleString();
+      document.getElementById('statTime').textContent = `${data.elapsed_ms} ms`;
+      document.getElementById('statSourceDim').textContent = `${data.orig_width} × ${data.orig_height} px`;
+      document.getElementById('statResTier').textContent =
+        data.resolution === 'full'
+          ? `100% (${data.render_width}×${data.render_height})`
+          : `Preview (${data.render_width}×${data.render_height})`;
+
+      const list = document.getElementById('layerList');
+      const reversedLayers = [...data.layers].reverse();
+
+      // Check if we can update existing layer cards in-place so an open OS color picker is not destroyed
+      const existingCards = list.querySelectorAll('.layer-card');
+      const sameStructure =
+        existingCards.length === reversedLayers.length &&
+        reversedLayers.every((l, i) => existingCards[i].dataset.domId === l.dom_id);
+
+      if (sameStructure) {
+        const isActivelyPicking = (Date.now() - (state.lastColorInputTime || 0)) < 250;
+        for (const layer of reversedLayers) {
+          const swatch = document.getElementById(`swatch_${layer.dom_id}`);
+          const skipActiveSwatch = isActivelyPicking && document.activeElement === swatch;
+          if (swatch && !skipActiveSwatch) {
+            if (swatch.tagName === 'INPUT') {
+              swatch.value = layer.color_hex;
+            } else {
+              swatch.style.background = layer.color_hex;
+            }
+          }
+          const badge = document.getElementById(`badge_${layer.dom_id}`);
+          if (badge && !skipActiveSwatch) {
+            badge.textContent = layer.color_hex.toUpperCase();
+          }
+          const countEl = document.getElementById(`count_${layer.dom_id}`);
+          if (countEl) {
+            countEl.textContent = `${layer.stroke_count} strokes ${layer.threshold > 0 ? `(D>${layer.threshold})` : ''}`;
+          }
+          const blurInput = document.getElementById(`blur_in_${layer.dom_id}`);
+          const blurValEl = document.getElementById(`blur_val_${layer.dom_id}`);
+          if (blurInput && document.activeElement !== blurInput && layer.blur !== undefined) {
+            blurInput.value = layer.blur;
+            if (blurValEl) blurValEl.textContent = `${Number(layer.blur).toFixed(1)}px`;
+          }
+        }
+        return;
+      }
+
+      list.innerHTML = '';
+      for (const layer of reversedLayers) {
+        const card = document.createElement('div');
+        card.className = 'layer-card';
+        card.dataset.domId = layer.dom_id;
+        const layerIdx = (layer.layer_index !== undefined) ? layer.layer_index : -2;
+        const badgeId = `badge_${layer.dom_id}`;
+        const swatchId = `swatch_${layer.dom_id}`;
+        const countId = `count_${layer.dom_id}`;
+        const opValId = `op_val_${layer.dom_id}`;
+        const blurInId = `blur_in_${layer.dom_id}`;
+        const blurValId = `blur_val_${layer.dom_id}`;
+        const blurSigma = (layer.blur !== undefined) ? Number(layer.blur) : 0.0;
+        const initOpacity = (layer.dom_id === 'layer_0_variable_width_preview' && layer.opacity !== undefined)
+          ? Number(layer.opacity)
+          : 1.0;
+        const initOpPct = Math.round(initOpacity * 100);
+        const canPickColor = layerIdx >= -1;
+        const canBlur = state.mode === 'painterly' && layerIdx >= 0;
+        const swatchHtml = canPickColor
+          ? `<input type="color" id="${swatchId}" class="swatch-picker" value="${layer.color_hex}"
+                    title="Click to customize layer color"
+                    oninput="onLayerColorChange(${layerIdx}, '${layer.dom_id}', this.value, '${badgeId}')" />`
+          : `<span id="${swatchId}" class="swatch-picker" style="background:${layer.color_hex}; display:inline-block; cursor:default;"></span>`;
+
+        const blurRowHtml = canBlur
+          ? `
+            <div class="layer-slider-row">
+              <span class="lbl">Blur</span>
+              <input type="range" id="${blurInId}" min="0" max="10" step="0.2" value="${blurSigma}"
+                     title="Per-layer Gaussian Blur (stdDeviation px)"
+                     oninput="onLayerBlurChange(${layerIdx}, '${layer.dom_id}', this.value, '${blurValId}')" />
+              <span class="val" id="${blurValId}">${blurSigma.toFixed(1)}px</span>
+            </div>`
+          : '';
+
+        card.innerHTML = `
+          <div class="layer-header">
+            <div class="layer-title">
+              ${swatchHtml}
+              <span title="${layer.name}">${layer.name}</span>
+              <span class="color-badge" id="${badgeId}">${layer.color_hex.toUpperCase()}</span>
+            </div>
+            <div>
+              <button class="icon-btn" onclick="toggleLayerVis('${layer.dom_id}', this)" title="Toggle Layer Visibility">Visible</button>
+              <button class="icon-btn" onclick="soloLayer('${layer.dom_id}')" title="Solo this layer">Solo</button>
+            </div>
+          </div>
+          <div class="layer-meta">
+            <span id="${countId}">${layer.stroke_count} strokes ${layer.threshold > 0 ? `(D>${layer.threshold})` : ''}</span>
+          </div>
+          <div class="layer-sliders">
+            <div class="layer-slider-row">
+              <span class="lbl">Opacity</span>
+              <input type="range" min="0" max="1" step="0.05" value="${initOpacity}"
+                     data-default-opacity="${initOpacity}"
+                     title="Live SVG Layer Opacity"
+                     oninput="setLayerDomOpacity('${layer.dom_id}', this.value, '${opValId}')" />
+              <span class="val" id="${opValId}">${initOpPct}%</span>
+            </div>
+            ${blurRowHtml}
+          </div>
+        `;
+        list.appendChild(card);
+      }
+    }
+
+    function toggleLayerVis(domId, btn) {
+      const svgEl = stage.querySelector('svg');
+      if (!svgEl) return;
+      const g = svgEl.querySelector(`#${CSS.escape(domId)}`);
+      const previewSub = svgEl.querySelector(`g[data-preview-for="${CSS.escape(domId)}"]`);
+      const isMuted = btn.classList.contains('muted');
+      const nowVisible = isMuted;
+      if (g) {
+        if (state.mode === 'plotter' && state.plotterDisplayMode === 'acrylic' && previewSub) {
+          g.style.display = 'none';
+        } else {
+          g.style.display = nowVisible ? '' : 'none';
+        }
+      }
+      if (previewSub) {
+        previewSub.style.display = nowVisible ? '' : 'none';
+      }
+      btn.classList.toggle('muted', !nowVisible);
+      if (state.lastResult && Array.isArray(state.lastResult.layers)) {
+        const found = state.lastResult.layers.find(l => l.dom_id === domId);
+        if (found) {
+          state.layerUiOverrides[found.layer_index] = {
+            ...(state.layerUiOverrides[found.layer_index] || {}),
+            visible: nowVisible,
+          };
+        }
+      }
+    }
+
+    function soloLayer(domId) {
+      const svgEl = stage.querySelector('svg');
+      if (!svgEl || !state.lastResult) return;
+      const acrylicOnly = (state.mode === 'plotter' && state.plotterDisplayMode === 'acrylic');
+      for (const l of state.lastResult.layers) {
+        const g = svgEl.querySelector(`#${CSS.escape(l.dom_id)}`);
+        if (!g) continue;
+        const isPaintLayer = l.layer_index >= 0;
+        const keep = (
+          l.dom_id === domId ||
+          l.dom_id === 'layer_0_paper_canvas' ||
+          (l.dom_id === 'layer_0_variable_width_preview' && domId !== 'layer_0_paper_canvas')
+        );
+        if (acrylicOnly && isPaintLayer) {
+          g.style.display = 'none';
+        } else {
+          g.style.display = keep ? '' : 'none';
+        }
+        const previewSub = svgEl.querySelector(`g[data-preview-for="${CSS.escape(l.dom_id)}"]`);
+        if (previewSub) {
+          const keepSub = (domId === 'layer_0_variable_width_preview' || l.dom_id === domId);
+          previewSub.style.display = keepSub ? '' : 'none';
+        }
+        const card = document.querySelector(`.layer-card[data-dom-id="${CSS.escape(l.dom_id)}"]`);
+        const visBtn = card ? card.querySelector('.layer-header .icon-btn') : null;
+        if (visBtn) {
+          visBtn.classList.toggle('muted', !keep);
+        }
+        state.layerUiOverrides[l.layer_index] = {
+          ...(state.layerUiOverrides[l.layer_index] || {}),
+          visible: keep,
+        };
+      }
+    }
+
+    function showAllLayers() {
+      state.layerUiOverrides = {};
+      const svgEl = stage.querySelector('svg');
+      if (!svgEl || !state.lastResult) return;
+      for (const l of state.lastResult.layers) {
+        const g = svgEl.querySelector(`#${CSS.escape(l.dom_id)}`);
+        if (g) {
+          g.style.display = '';
+          g.style.opacity = '';
+        }
+        const previewSub = svgEl.querySelector(`g[data-preview-for="${CSS.escape(l.dom_id)}"]`);
+        if (previewSub) {
+          previewSub.style.display = '';
+          previewSub.style.opacity = '';
+        }
+        const opValEl = document.getElementById(`op_val_${l.dom_id}`);
+        if (opValEl) {
+          opValEl.textContent = l.dom_id === 'layer_0_variable_width_preview' ? '55%' : '100%';
+        }
+      }
+      document.querySelectorAll('#layerList .icon-btn').forEach(b => b.classList.remove('muted'));
+      document.querySelectorAll('#layerList input[title="Live SVG Layer Opacity"]').forEach(inp => {
+        inp.value = inp.getAttribute('data-default-opacity') || 1;
+      });
+      if (state.mode === 'plotter') {
+        applyPlotterDisplayModeToDom();
+      }
+    }
+
+    function setLayerDomOpacity(domId, val, labelId) {
+      if (labelId) {
+        const lbl = document.getElementById(labelId);
+        if (lbl) lbl.textContent = `${Math.round(parseFloat(val) * 100)}%`;
+      }
+      if (state.lastResult && Array.isArray(state.lastResult.layers)) {
+        const found = state.lastResult.layers.find(l => l.dom_id === domId);
+        if (found) {
+          state.layerUiOverrides[found.layer_index] = {
+            ...(state.layerUiOverrides[found.layer_index] || {}),
+            opacity: parseFloat(val),
+          };
+        }
+      }
+      const svgEl = stage.querySelector('svg');
+      if (!svgEl) return;
+      const g = svgEl.querySelector(`#${CSS.escape(domId)}`);
+      if (g) g.style.opacity = val;
+      const previewSub = svgEl.querySelector(`g[data-preview-for="${CSS.escape(domId)}"]`);
+      if (previewSub) previewSub.style.opacity = val;
+    }
+
+    function setPlotterDisplayMode(viewMode) {
+      state.plotterDisplayMode = viewMode;
+      document.querySelectorAll('#plotterDisplaySegmented button').forEach(b => {
+        b.classList.toggle('active', b.dataset.pview === viewMode);
+      });
+      applyPlotterDisplayModeToDom();
+    }
+
+    function applyPlotterDisplayModeToDom() {
+      if (state.mode !== 'plotter') return;
+      const svgEl = stage.querySelector('svg');
+      if (!svgEl) return;
+
+      const previewGroup = svgEl.querySelector('#layer_0_variable_width_preview');
+      const centerlineGroups = svgEl.querySelectorAll('g[data-layer-index]:not([data-preview-for])');
+      const opValEl = document.getElementById('op_val_layer_0_variable_width_preview');
+      const previewCard = document.querySelector('.layer-card[data-dom-id="layer_0_variable_width_preview"] input[type="range"]');
+
+      if (state.plotterDisplayMode === 'acrylic') {
+        if (previewGroup) {
+          previewGroup.style.display = '';
+          previewGroup.style.opacity = '1.0';
+          previewGroup.querySelectorAll('path.footprint-preview-path').forEach(p => {
+            p.setAttribute('fill-opacity', '0.96');
+          });
+        }
+        centerlineGroups.forEach(g => { g.style.display = 'none'; });
+        if (opValEl) opValEl.textContent = '100%';
+        if (previewCard) previewCard.value = 1.0;
+      } else if (state.plotterDisplayMode === 'centerlines') {
+        if (previewGroup) {
+          previewGroup.style.display = 'none';
+        }
+        centerlineGroups.forEach(g => { g.style.display = ''; });
+      } else {
+        // 'overlay' default: both centerlines and 55% footprint preview visible
+        if (previewGroup) {
+          previewGroup.style.display = '';
+          previewGroup.style.opacity = '0.55';
+          previewGroup.querySelectorAll('path.footprint-preview-path').forEach(p => {
+            p.setAttribute('fill-opacity', '0.88');
+          });
+        }
+        centerlineGroups.forEach(g => { g.style.display = ''; });
+        if (opValEl) opValEl.textContent = '55%';
+        if (previewCard) previewCard.value = 0.55;
+      }
+    }
+
+    function renderViewportContent() {
+      const data = state.lastResult;
+      if (!data) return;
+
+      const w = data.render_width;
+      const h = data.render_height;
+
+      stage.className = 'canvas-stage';
+      stage.style.width = `${w}px`;
+      stage.style.height = `${h}px`;
+      stage.innerHTML = data.svg_text;
+      if (state.mode === 'plotter') {
+        applyPlotterDisplayModeToDom();
+      }
+      applyStageTransform();
+    }
+
+    // Pan & Zoom Logic
+    function setupPanZoom() {
+      viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const rect = viewport.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        const factor = e.deltaY < 0 ? 1.14 : 1 / 1.14;
+        const newZoom = Math.min(16.0, Math.max(0.1, state.zoom * factor));
+        state.panX = mx - (mx - state.panX) * (newZoom / state.zoom);
+        state.panY = my - (my - state.panY) * (newZoom / state.zoom);
+        state.zoom = newZoom;
+        applyStageTransform();
+      }, { passive: false });
+
+      viewport.addEventListener('mousedown', (e) => {
+        state.isPanning = true;
+        state.startPanX = e.clientX - state.panX;
+        state.startPanY = e.clientY - state.panY;
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!state.isPanning) return;
+        state.panX = e.clientX - state.startPanX;
+        state.panY = e.clientY - state.startPanY;
+        applyStageTransform();
+      });
+
+      window.addEventListener('mouseup', () => {
+        state.isPanning = false;
+      });
+    }
+
+    function applyStageTransform() {
+      stage.style.transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.zoom})`;
+      document.getElementById('zoomReadout').textContent = `${Math.round(state.zoom * 100)}%`;
+    }
+
+    function zoomBy(factor) {
+      const rect = viewport.getBoundingClientRect();
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+      const newZoom = Math.min(16.0, Math.max(0.1, state.zoom * factor));
+      state.panX = cx - (cx - state.panX) * (newZoom / state.zoom);
+      state.panY = cy - (cy - state.panY) * (newZoom / state.zoom);
+      state.zoom = newZoom;
+      applyStageTransform();
+    }
+
+    function fitStageToViewport() {
+      if (!state.lastResult) return;
+      const rect = viewport.getBoundingClientRect();
+      const w = state.lastResult.render_width;
+      const h = state.lastResult.render_height;
+      const pad = 64;
+      const scaleX = (rect.width - pad) / Math.max(w, 1);
+      const scaleY = (rect.height - pad) / Math.max(h, 1);
+      state.zoom = Math.min(scaleX, scaleY, 2.0);
+      state.panX = (rect.width - w * state.zoom) / 2;
+      state.panY = (rect.height - h * state.zoom) / 2;
+      applyStageTransform();
+    }
+
+    function resetZoom100() {
+      if (!state.lastResult) return;
+      const rect = viewport.getBoundingClientRect();
+      const w = state.lastResult.render_width;
+      const h = state.lastResult.render_height;
+      state.zoom = 1.0;
+      state.panX = (rect.width - w) / 2;
+      state.panY = (rect.height - h) / 2;
+      applyStageTransform();
+    }
+
+    window.addEventListener('DOMContentLoaded', initStudio);
+  </script>
+</body>
+</html>

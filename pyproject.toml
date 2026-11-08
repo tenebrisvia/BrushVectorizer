@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "brush-vectorizer"
+version = "0.1.0"
+description = "Client-Side WebAssembly (Pyodide) Multi-Layer Painterly & Acrylic Plotter Vectorization Studio"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "networkx>=3.0",
+    "pillow>=10.0",
+    "pydantic>=2.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
