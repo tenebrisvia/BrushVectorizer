@@ -1,0 +1,81 @@
+# ==============================================================================
+# Python
+# ==============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# C extensions / compiled modules
+*.c
+*.so
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+.eggs/
+*.egg
+*.whl
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ==============================================================================
+# Testing & Code Quality
+# ==============================================================================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.mypy_cache/
+.ruff_cache/
+.web_cache/
+
+# ==============================================================================
+# Pipeline Outputs & Diagnostic Logs
+# ==============================================================================
+# Stage diagnostic visualization directories
+debug/
+**/debug/
+
+# Generic output directories from CLI runs
+output/
+outputs/
+
+# Root-level vectorization outputs from test/local runs
+*.strokes.json
+*.strokes.svg
+
+# Keep demo files tracked in repository
+!output_demo/*.strokes.json
+!output_demo/*.strokes.svg
+
+# ==============================================================================
+# Operating System & IDE Files
+# ==============================================================================
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
